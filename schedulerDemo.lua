@@ -242,8 +242,6 @@ end
 
 Scheduler.RunFunction(spamFunction)
 
-Scheduler.QueueEvents = true;
-Scheduler.QueueSizeLimit = 3;
 
 Scheduler.NoThreadsHandler = function(scheduler)
 	term.setCursorPos(1, 1)
