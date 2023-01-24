@@ -74,7 +74,6 @@ for i = 1, #coreComponentFiles do
 				local coreComponentName = coreComponentFile:sub(0, -5);
 				local coreComponent = loadfile("/CoreComponents/" .. coreComponentFile);
 				Jello.CoreComponents[coreComponentName] = coreComponent;
-				print(coreComponentFile);
 			end
 		end
 	end)

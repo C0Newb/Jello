@@ -3,6 +3,7 @@
 	Jello scheduler
 
 
+	Developed with love by @Watsuprico
 ]]
 
 local args = {...};

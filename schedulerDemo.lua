@@ -16,9 +16,7 @@ for i = 1, #args do
 end
 
 local Jello = loadfile("Jello.lua")();
-local Scheduler = Jello.CoreComponents.Scheduler({
-	["ExitOnNoThreads"] = false,
-});
+local Scheduler = Jello.CoreComponents.Scheduler();
 
 
 
@@ -259,8 +257,9 @@ Scheduler.NoThreadsHandler = function(scheduler)
 	end
 end
 
-
+-- Scheduler.RunFunction(dofile, "/scrollbarDemo.lua")
 spawnThreads();
+
 term.clear()
 if useParallel == true then
 	runUsingParallel();
