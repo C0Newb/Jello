@@ -33,6 +33,13 @@ local Jello = {
 
 	["Components"] = {},
 	["CoreComponents"] = {},
+
+	["Config"] = {
+		["Mouse"] = {
+			["PrimaryButton"] = 1,
+			["SecondaryButton"] = 2,
+		},
+	},
 };
 
 
@@ -55,7 +62,7 @@ for i = 1, #componentFiles do
 		if #componentFile >= 5 then
 			if componentFile:sub(-4) == ".lua" then
 				local componentName = componentFile:sub(0, -5);
-				local component = loadfile("/Components/" .. componentFile);
+				local component = loadfile("/Components/" .. componentFile)(Jello);
 				Jello.Components[componentName] = component;
 			end
 		end
@@ -72,7 +79,7 @@ for i = 1, #coreComponentFiles do
 		if #coreComponentFile >= 5 then
 			if coreComponentFile:sub(-4) == ".lua" then
 				local coreComponentName = coreComponentFile:sub(0, -5);
-				local coreComponent = loadfile("/CoreComponents/" .. coreComponentFile);
+				local coreComponent = loadfile("/CoreComponents/" .. coreComponentFile)(Jello);
 				Jello.CoreComponents[coreComponentName] = coreComponent;
 			end
 		end

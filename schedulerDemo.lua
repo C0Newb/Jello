@@ -205,24 +205,30 @@ local function spamFunction()
 	end
 end
 
-local function spawnThreads()
-	print("Adding A")
-	Scheduler.RunFunction(bounceBall, windowA, windowAColors, 0);
-	print("Adding B")
-	Scheduler.RunFunction(bounceBall, windowB, windowBColors, 0.15);
-	print("Adding C");
-	Scheduler.RunFunction(bounceBall, windowC, windowCColors, 0.3);
+local function spawnThreads(runScrolldemo)
+	if (not runScrolldemo) then
+		print("Adding A")
+		Scheduler.RunFunction(bounceBall, windowA, windowAColors, 0);
+		print("Adding B")
+		Scheduler.RunFunction(bounceBall, windowB, windowBColors, 0.15);
+		print("Adding C");
+		Scheduler.RunFunction(bounceBall, windowC, windowCColors, 0.3);
+	else
+		Scheduler.RunFunction(dofile, "/scrollbarDemo.lua")
+	end
 	print("Adding D");
 	Scheduler.RunFunction(bounceBall, windowD, windowDColors, 0.15);
 	print("Adding E");
 	Scheduler.RunFunction(bounceBall, windowE, windowEColors, 0);
 
-	print("Adding F")
-	Scheduler.RunFunction(bounceBall, windowF, windowFColors, 0);
-	print("Adding G")
-	Scheduler.RunFunction(bounceBall, windowG, windowGColors, 0.15);
-	print("Adding H");
-	Scheduler.RunFunction(bounceBall, windowH, windowHColors, 0.3);
+	if (not runScrolldemo) then
+		print("Adding F")
+		Scheduler.RunFunction(bounceBall, windowF, windowFColors, 0);
+		print("Adding G")
+		Scheduler.RunFunction(bounceBall, windowG, windowGColors, 0.15);
+		print("Adding H");
+		Scheduler.RunFunction(bounceBall, windowH, windowHColors, 0.3);
+	end
 	print("Adding I");
 	Scheduler.RunFunction(bounceBall, windowI, windowIColors, 0.15);
 	print("Adding J");
@@ -257,8 +263,7 @@ Scheduler.NoThreadsHandler = function(scheduler)
 	end
 end
 
--- Scheduler.RunFunction(dofile, "/scrollbarDemo.lua")
-spawnThreads();
+spawnThreads(true);
 
 term.clear()
 if useParallel == true then
