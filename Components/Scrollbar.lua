@@ -189,6 +189,8 @@ return function(parentWindow)
 
 	if Scrollbar.VerticalScrollbar.RightAligned then
 		Scrollbar.VerticalScrollbar.PosX = ParentMaxX;
+	else
+		Scrollbar.VerticalScrollbar.PosX = 1;
 	end
 	Scrollbar.VerticalScrollbar.Window = window.create(Scrollbar.ParentWindow,
 		Scrollbar.VerticalScrollbar.PosX,
@@ -200,6 +202,8 @@ return function(parentWindow)
 
 	if Scrollbar.HorizontalScrollbar.BottomAligned then
 		Scrollbar.HorizontalScrollbar.PosY = ParentMaxY;
+	else
+		Scrollbar.HorizontalScrollbar.PosY = 1;
 	end
 	Scrollbar.HorizontalScrollbar.Window = window.create(Scrollbar.ParentWindow,
 		Scrollbar.HorizontalScrollbar.PosX,
@@ -378,7 +382,22 @@ return function(parentWindow)
 
 		if (Scrollbar.HorizontalScrollbar.Visible == true) then
 			ParentMaxY = ParentMaxY - Scrollbar.HorizontalScrollbar.Height;
+			if (Scrollbar.HorizontalScrollbar.BottomAligned) then
+				Scrollbar.VerticalScrollbar.PosY = 1;
+			else
+				Scrollbar.VerticalScrollbar.PosY = 2;
+			end
+		else
+			Scrollbar.VerticalScrollbar.PosY = 1;
 		end
+		if Scrollbar.VerticalScrollbar.RightAligned then
+			Scrollbar.VerticalScrollbar.PosX = ParentMaxX;
+			Scrollbar.ContentContainer.PosX = 1;
+		else
+			Scrollbar.VerticalScrollbar.PosX = 1;
+			Scrollbar.ContentContainer.PosX = 2;
+		end
+
 		Scrollbar.VerticalScrollbar.Height = ParentMaxY;
 		Scrollbar.ContentContainer.Height = ParentMaxY;
 
@@ -429,7 +448,7 @@ return function(parentWindow)
 		Scrollbar.VerticalScrollbar.Window.setTextColor(downArrowForeground);
 		local downArrow = (Scrollbar.VerticalScrollbar.Design.DownArrow or Scrollbar.Design.DownArrow):sub(0,1);
 		for iW = 1, Scrollbar.VerticalScrollbar.Width do
-			Scrollbar.VerticalScrollbar.Window.setCursorPos(iW, (ParentMaxY-Scrollbar.VerticalScrollbar.PosY)+1);
+			Scrollbar.VerticalScrollbar.Window.setCursorPos(iW, (ParentMaxY-1)+1);
 			Scrollbar.VerticalScrollbar.Window.write(downArrow);
 		end
 	end
@@ -451,9 +470,9 @@ return function(parentWindow)
 	Scrollbar.VerticalScrollbar.DrawKnob = function()
 		Scrollbar.VerticalScrollbar.DrawTrack();
 		local knobText = setKnobDesign(true);
-		for i = 0, Scrollbar.VerticalScrollbar.KnobHeight-1 do
+		for iH = 0, Scrollbar.VerticalScrollbar.KnobHeight-1 do
 			for iW = 1, Scrollbar.VerticalScrollbar.Width do -- Allows the text to be printed on all sides if scrollbar width >1
-				Scrollbar.VerticalScrollbar.Window.setCursorPos(iW,Scrollbar.VerticalScrollbar.KnobY+i);
+				Scrollbar.VerticalScrollbar.Window.setCursorPos(iW,Scrollbar.VerticalScrollbar.KnobY+iH);
 				Scrollbar.VerticalScrollbar.Window.write(knobText);
 			end
 		end
@@ -542,7 +561,25 @@ return function(parentWindow)
 		
 		if (Scrollbar.VerticalScrollbar.Visible == true) then
 			ParentMaxX = ParentMaxX-Scrollbar.VerticalScrollbar.Width;
+			if (Scrollbar.VerticalScrollbar.RightAligned) then
+				Scrollbar.HorizontalScrollbar.PosX = 1;
+			else
+				Scrollbar.HorizontalScrollbar.PosX = 2;
+			end
+		else
+			Scrollbar.HorizontalScrollbar.PosX = 1;
 		end
+
+		if Scrollbar.HorizontalScrollbar.BottomAligned then
+			Scrollbar.HorizontalScrollbar.PosY = ParentMaxY;
+			Scrollbar.ContentContainer.PosY = 1;
+		else
+			Scrollbar.HorizontalScrollbar.PosY = 1;
+			Scrollbar.ContentContainer.PosY = 2;
+		end
+
+
+
 		Scrollbar.HorizontalScrollbar.Width = ParentMaxX;
 		Scrollbar.ContentContainer.Width = ParentMaxX;
 		
@@ -594,7 +631,7 @@ return function(parentWindow)
 		Scrollbar.HorizontalScrollbar.Window.setTextColor(rightArrowForeground);
 		local rightArrowText = (Scrollbar.HorizontalScrollbar.Design.RightArrow or Scrollbar.Design.RightArrow):sub(0,1);
 		for iH = 1, Scrollbar.HorizontalScrollbar.Height do
-			Scrollbar.HorizontalScrollbar.Window.setCursorPos((ParentMaxX-Scrollbar.HorizontalScrollbar.PosX)+1,iH);
+			Scrollbar.HorizontalScrollbar.Window.setCursorPos((ParentMaxX-1)+1,iH);
 			Scrollbar.HorizontalScrollbar.Window.write(rightArrowText);
 		end
 	end
@@ -777,12 +814,17 @@ return function(parentWindow)
 		cords.cWX2 = Scrollbar.ContentContainer.PosX + Scrollbar.ContentContainer.Width-1; -- far right
 		cords.cWY2 = Scrollbar.ContentContainer.PosY + Scrollbar.ContentContainer.Height-1; -- bottom
 
+		local vK1Offset = 0;
+		local hK1Offset = 0;
+		if (not Scrollbar.VerticalScrollbar.RightAligned) then hK1Offset = 1; end
+		if (not Scrollbar.HorizontalScrollbar.BottomAligned) then vK1Offset = 1; end
+
 		-- Vertical scrollbar
 		cords.vSbX1 = Scrollbar.VerticalScrollbar.PosX; -- far left
 		cords.vSbY1 = Scrollbar.VerticalScrollbar.PosY; -- top
 		cords.vSbX2 = cords.vSbX1 + Scrollbar.VerticalScrollbar.Width-1; -- far right
 		cords.vSbY2 = cords.vSbY1 + Scrollbar.VerticalScrollbar.Height-1; -- bottom
-		cords.vSbK1 = Scrollbar.VerticalScrollbar.KnobY;
+		cords.vSbK1 = Scrollbar.VerticalScrollbar.KnobY + vK1Offset;
 		cords.vSbK2 = cords.vSbK1+Scrollbar.VerticalScrollbar.KnobHeight-1;
 
 		-- Horizontal scrollbar
@@ -790,7 +832,7 @@ return function(parentWindow)
 		cords.hSbY1 = Scrollbar.HorizontalScrollbar.PosY; -- top
 		cords.hSbX2 = cords.hSbX1 + Scrollbar.HorizontalScrollbar.Width-1; -- far right
 		cords.hSbY2 = cords.hSbY1 + Scrollbar.HorizontalScrollbar.Height-1; -- bottom
-		cords.hSbK1 = Scrollbar.HorizontalScrollbar.KnobX;
+		cords.hSbK1 = Scrollbar.HorizontalScrollbar.KnobX + hK1Offset;
 		cords.hSbK2 = cords.hSbK1+Scrollbar.HorizontalScrollbar.KnobWidth-1;
 
 		return cords;
@@ -903,7 +945,7 @@ return function(parentWindow)
 						Scrollbar.VerticalScrollbar.TrackActive = true;
 						Scrollbar.VerticalScrollbar.DrawKnob();
 						Scrollbar.VerticalScrollbar.PageUp();
-					elseif (cords.mY > cords.vSbK2 and cords.mY < cords.hSbY2) then
+					elseif (cords.mY > cords.vSbK2 and cords.mY < cords.vSbY2) then
 						-- Page down
 						Scrollbar.VerticalScrollbar.TrackActive = true;
 						Scrollbar.VerticalScrollbar.DrawKnob();
@@ -946,11 +988,14 @@ return function(parentWindow)
 			-- if (not coordinatesInsideParentWindow(cords)) then return end
 
 			if (Scrollbar.VerticalScrollbar.KnobActive and (cords.mY >= cords.cWY1 and cords.mY <= cords.cWY2)) then
-				local y = cords.mY + Scrollbar.VerticalScrollbar.KnobActiveY;
-				if (y < cords.vSbY1+1) then
-					y = cords.vSbY1+1;
-				elseif (y > (cords.vSbY2)-Scrollbar.VerticalScrollbar.KnobHeight) then
-					y = (cords.vSbY2)-Scrollbar.VerticalScrollbar.KnobHeight;
+				local upOffet = (Scrollbar.HorizontalScrollbar.BottomAligned) and 1 or 0;
+				local downOffset = (Scrollbar.HorizontalScrollbar.BottomAligned) and 0 or 1;
+				local y = cords.mY + Scrollbar.VerticalScrollbar.KnobActiveY - downOffset;
+
+				if (y < cords.vSbY1+upOffet) then -- Too far up
+					y = cords.vSbY1+upOffet;
+				elseif (y > (cords.vSbY2)-Scrollbar.VerticalScrollbar.KnobHeight-downOffset) then -- Too far down
+					y = (cords.vSbY2)-Scrollbar.VerticalScrollbar.KnobHeight-downOffset;
 				end
 				Scrollbar.VerticalScrollbar.KnobY = y;
 				if (Scrollbar.ScrollOnDrag) then
@@ -959,13 +1004,17 @@ return function(parentWindow)
 				end
 				Scrollbar.VerticalScrollbar.DrawKnob();
 
+
 			elseif (Scrollbar.HorizontalScrollbar.KnobActive and (cords.mX >= cords.cWX1 and cords.mX <= cords.cWX2)) then
 				-- Scroll left/right
-				local x = cords.mX + Scrollbar.HorizontalScrollbar.KnobActiveX;
-				if (x < cords.hSbX1+1) then
-					x = cords.hSbX1+1;
-				elseif (x > (cords.hSbX2)-Scrollbar.HorizontalScrollbar.KnobWidth) then
-					x = (cords.hSbX2)-Scrollbar.HorizontalScrollbar.KnobWidth;
+				local leftOffset = (Scrollbar.VerticalScrollbar.RightAligned) and 1 or 0;
+				local rightOffset = (Scrollbar.VerticalScrollbar.RightAligned) and 0 or 1;
+				local x = cords.mX + Scrollbar.HorizontalScrollbar.KnobActiveX - rightOffset;
+
+				if (x < cords.hSbX1+leftOffset) then -- Too far left
+					x = cords.hSbX1+leftOffset;
+				elseif (x > (cords.hSbX2)-Scrollbar.HorizontalScrollbar.KnobWidth-rightOffset) then -- Too far right
+					x = (cords.hSbX2)-Scrollbar.HorizontalScrollbar.KnobWidth-rightOffset;
 				end
 				Scrollbar.HorizontalScrollbar.KnobX = x;
 				if (Scrollbar.ScrollOnDrag) then
