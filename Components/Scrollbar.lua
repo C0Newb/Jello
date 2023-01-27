@@ -231,7 +231,7 @@ return function(parentWindow)
 		for id, child in ipairs(Scrollbar.Children) do -- This way nested scrollbars have priority
 			if (child ~= nil) then
 				if (type(child.HandleEvent) == "function") then
-					Scrollbar.Children.HandleEvent("jello::scrolled", amount);
+					child.HandleEvent("jello::scrolled", amount);
 				end
 			end
 		end
@@ -1178,25 +1178,27 @@ return function(parentWindow)
 			end
 
 		elseif (eventName == "key") then
-			if (Scrollbar.ComponentInFocus == nil) and Jello.ScrollLock then
+			if (Scrollbar.ComponentInFocus == nil) then
 				if (event[2] == keys.pageUp) then
 					Scrollbar.PageUp();
 					return true
 				elseif (event[2] == keys.pageDown) then
 					Scrollbar.PageDown();
 					return true
-				elseif (event[2] == keys.left) then
-					Scrollbar.ScrollLeft();
-					return true
-				elseif (event[2] == keys.up) then
-					Scrollbar.ScrollUp();
-					return true
-				elseif (event[2] == keys.right) then
-					Scrollbar.ScrollRight();
-					return true
-				elseif (event[2] == keys.down) then
-					Scrollbar.ScrollDown();
-					return true
+				elseif (Jello.ScrollLock) then
+					if (event[2] == keys.left) then
+						Scrollbar.ScrollLeft();
+						return true
+					elseif (event[2] == keys.up) then
+						Scrollbar.ScrollUp();
+						return true
+					elseif (event[2] == keys.right) then
+						Scrollbar.ScrollRight();
+						return true
+					elseif (event[2] == keys.down) then
+						Scrollbar.ScrollDown();
+						return true
+					end
 				end
 			end
 		end
@@ -1223,7 +1225,7 @@ return function(parentWindow)
 		for id, child in ipairs(Scrollbar.Children) do -- This way nested scrollbars have priority
 			if (child ~= nil) then
 				if (type(child.HandleEvent) == "function") then
-					if child.HandleEvent(getContentRelativeEventCoordinates()) == true then
+					if child.HandleEvent(event) == true then
 						return true
 					end
 				end
