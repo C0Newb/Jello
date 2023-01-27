@@ -228,9 +228,11 @@ return function(parentWindow)
 		bar.ScrollPosition = bar.ScrollPosition + amount;
 		Scrollbar.Content.Window.reposition(Scrollbar.HorizontalScrollbar.ScrollPosition, Scrollbar.VerticalScrollbar.ScrollPosition);
 		Scrollbar.Content.Window.redraw();
-		for id, component in ipairs(Scrollbar.Children) do
-			if (Scrollbar.Children ~= nil) then
-				Scrollbar.Children.HandleEvent("jello::scrolled", amount);
+		for id, child in ipairs(Scrollbar.Children) do -- This way nested scrollbars have priority
+			if (child ~= nil) then
+				if (type(child.HandleEvent) == "function") then
+					Scrollbar.Children.HandleEvent("jello::scrolled", amount);
+				end
 			end
 		end
 		bar.RecalulateValues();
@@ -1011,10 +1013,12 @@ return function(parentWindow)
 			local cords = getCordinates(event[3], event[4]);
 			if (coordinatesInsideParentWindow(cords)) then -- Within the Scrollbar parent
 				-- Run it by the children first
-				for id, component in ipairs(Scrollbar.Children) do -- This way nested scrollbars have priority
-					if (Scrollbar.Children ~= nil) then
-						if Scrollbar.Children.HandleEvent(getContentRelativeEventCoordinates()) then
-							return true
+				for id, child in ipairs(Scrollbar.Children) do -- This way nested scrollbars have priority
+					if (child ~= nil) then
+						if (type(child.HandleEvent) == "function") then
+							if child.HandleEvent(getContentRelativeEventCoordinates()) == true then
+								return true
+							end
 						end
 					end
 				end
@@ -1203,18 +1207,26 @@ return function(parentWindow)
 				return true -- We "handled" it (don't pass these coordinates on)
 			end
 			if (coordinatesInsideParentWindow(cords)) then
-				if (Scrollbar.Children ~= nil) then
-					if Scrollbar.Children.HandleEvent(getContentRelativeEventCoordinates()) then
-						return true -- Pass the mouse events to our children
+				for id, child in ipairs(Scrollbar.Children) do -- This way nested scrollbars have priority
+					if (child ~= nil) then
+						if (type(child.HandleEvent) == "function") then
+							if child.HandleEvent(getContentRelativeEventCoordinates()) == true then
+								return true
+							end
+						end
 					end
 				end
 			end
 			return false, getContentRelativeEventCoordinates()
 		end
 
-		if (Scrollbar.Children ~= nil) then
-			if Scrollbar.Children.HandleEvent(event) then
-				return true
+		for id, child in ipairs(Scrollbar.Children) do -- This way nested scrollbars have priority
+			if (child ~= nil) then
+				if (type(child.HandleEvent) == "function") then
+					if child.HandleEvent(getContentRelativeEventCoordinates()) == true then
+						return true
+					end
+				end
 			end
 		end
 
