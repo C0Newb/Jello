@@ -34,10 +34,13 @@ local Jello = {
 	["Components"] = {},
 	["CoreComponents"] = {},
 
+	["ScrollLock"] = false,
+
 	["Config"] = {
 		["Mouse"] = {
 			["PrimaryButton"] = 1,
 			["SecondaryButton"] = 2,
+			["ScrollAmount"] = 2,
 		},
 	},
 };

@@ -18,30 +18,59 @@ local Jello = loadfile("Jello.lua")();
 local Scrollbar = Jello.Components.Scrollbar(ParentWindow);
 
 
-local function drawContent(drawChar)
+local function drawContent(drawChar, randomColors, noText)
 	Scrollbar.Content.Window.setBackgroundColor(colors.lightBlue);
 	Scrollbar.Content.Window.clear();
 	local i=0;
 	Scrollbar.Content.Window.setCursorPos(1,1)
 	local mX, mY = Scrollbar.Content.Window.getSize();
-	while i<mY do
-		for k in pairs(colors) do
-			if type(colors[k]) == "number" then
-				Scrollbar.Content.Window.setBackgroundColor(colors[k])
-				Scrollbar.Content.Window.setTextColor((colors[k] == colors.white or colors[k] == colors.pink) and colors.black or colors.white)
-				local leftText = "< line #" .. i .. " ";
-				if (i < 256) and (drawChar) then
-					leftText = "< char " .. i .. ": \""..string.char(i).."\" ";
-				end
-				Scrollbar.Content.Window.write(leftText);
-				for iW=2, mX-(#leftText) do
-					Scrollbar.Content.Window.write("-");
-				end
-				Scrollbar.Content.Window.write(">");
-				i=i+1;
-				Scrollbar.Content.Window.setCursorPos(1,i);
+	while i<=mY do
+		local leftText = " "
+		if not noText then
+			leftText = "< line #" .. i .. " ";
+			if (i < 256 and drawChar) or not drawChar then
+				leftText = "< char " .. i .. ": \""..string.char(i).."\" ";
+			end
+			local num = mX-(#leftText)
+			for ii=2, num do
+				leftText = leftText .. "-";
+			end
+			leftText = leftText .. ">"
+		else
+			for ii=1, mX do
+				leftText = leftText .. " "
 			end
 		end
+		local tColor = colors.white;
+		local bColor = colors.black;
+		if (randomColors) then
+			for ii = 1, #leftText do
+				if (term.isColor and term.isColor()) then
+					tColor = 2^math.random(0,14);
+					bColor = 2^math.random(0,14);
+				end
+				if (bColor == tColor) then
+					if (bColor == colors.white or bColor == colors.pink) then
+						tColor = colors.black
+					else
+						tColor = colors.white
+					end
+				end
+				Scrollbar.Content.Window.setTextColor(tColor);
+				Scrollbar.Content.Window.setBackgroundColor(bColor);
+				Scrollbar.Content.Window.write(leftText:sub(ii, ii));
+			end
+		else
+			bColor = 2^((i%14)+1)
+			Scrollbar.Content.Window.setTextColor((bColor == colors.white or bColor == colors.pink) and colors.black or colors.white)
+			Scrollbar.Content.Window.setBackgroundColor(bColor);
+			Scrollbar.Content.Window.write(leftText);
+		end
+
+
+		i=i+1;
+		Scrollbar.Content.Window.setCursorPos(1,i);
+	
 		if (mY>100) then
 			term.setCursorPos(1,1)
 			term.setBackgroundColor(colors.black)
@@ -185,7 +214,7 @@ local function customize()
 	Scrollbar.VerticalScrollbar.Design.DownArrow = string.char(25);
 
 	Scrollbar.HorizontalScrollbar.PosY = Scrollbar.HorizontalScrollbar.PosY-1;
-	Scrollbar.HorizontalScrollbar.Height = 2;
+	Scrollbar.HorizontalScrollbar.Height = 3;
 
 	Scrollbar.VerticalScrollbar.PosX = Scrollbar.VerticalScrollbar.PosX-1;
 	Scrollbar.VerticalScrollbar.Width = 2;
@@ -220,7 +249,7 @@ local function handleEvents()
 	Scrollbar.SetContentWindow(window.create(ParentWindow, 1, 1, 100, 500, true))
 	-- Scrollbar.SetContentWindow(window.create(ParentWindow, 1, 1, 1000, 1000, true))
 	
-	drawContent(true);
+	drawContent(true, false, false);
 
 	-- customize()
 

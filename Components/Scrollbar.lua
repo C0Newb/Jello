@@ -38,6 +38,8 @@ return function(parentWindow)
 
 
 	local Scrollbar = {
+		-- If this scrollbar is a child component of a different element, DO NOT set this to true!
+		["AbsorbOutOfBoundsMouseEvents"] = false, -- Whether mouse events that occurred outside of the parent window are "handled" or captured by us.
 		["ComponentInFocus"] = nil, -- Component currently in focus (us (nil) or a child)
 		["ParentWindow"] = parentWindow,
 		["Design"] = {
@@ -170,22 +172,19 @@ return function(parentWindow)
 		["Content"] = {
 			["PosX"] = 1,
 			["PosY"] = 1,
-			["Width"] = ParentMaxX, -- Max width - Vscrollbar width
-			["Height"] = ParentMaxY, -- Max height - Hscrollbar width
 			["Window"] = nil,
 		},
 
 		["ContentContainer"] = { -- This way the content window does not clip our scrollbars
 			["PosX"] = 1,
 			["PosY"] = 1,
-			["Width"] = ParentMaxX, -- Max width - Vscrollbar width
-			["Height"] = ParentMaxY, -- Max height - Hscrollbar width
+			["Width"] = ParentMaxX-1, -- Max width - Vscrollbar width
+			["Height"] = ParentMaxY-1, -- Max height - Hscrollbar width
 			["Window"] = nil,
 		},
 
 		["ScrollOnDrag"] = true, -- Scroll the content as you're dragging the knob (if disabled, content is scrolled when the mouse button is let up (mouse_up))
 	};
-
 
 	if Scrollbar.VerticalScrollbar.RightAligned then
 		Scrollbar.VerticalScrollbar.PosX = ParentMaxX;
@@ -221,6 +220,7 @@ return function(parentWindow)
 		if (Scrollbar.VerticalScrollbar.Visible == true) then
 			ParentMaxX = ParentMaxX-Scrollbar.VerticalScrollbar.Width;
 		end
+		return ParentMaxX, ParentMaxY
 	end
 
 	-- Common scroll code
@@ -290,6 +290,17 @@ return function(parentWindow)
 		if (Scrollbar.VerticalScrollbar == nil) then Scrollbar.VerticalScrollbar = {} end
 		if (Scrollbar.HorizontalScrollbar == nil) then Scrollbar.HorizontalScrollbar = {} end
 
+		local function windowScroll(ogScroll)
+			local function scroll(amount)
+				if amount > 0 and not Scrollbar.IsAtBottom() then
+					Scrollbar.Scroll(amount)
+					ogScroll(amount)
+				end
+				return ogScroll(amount)
+			end
+			return scroll
+		end
+
 		if (windowObject == nil) then
 			Scrollbar.VerticalScrollbar.Visible = false;
 			Scrollbar.VerticalScrollbar.Window.setVisible(false)
@@ -303,6 +314,8 @@ return function(parentWindow)
 			Scrollbar.ContentContainer.Window = window.create(Scrollbar.ParentWindow, 1, 1, ParentMaxX, ParentMaxY, true);
 			Scrollbar.Content.Window = window.create(Scrollbar.ContentContainer.Window, 1, 1, ParentMaxX, ParentMaxY, true);
 			Scrollbar.Content.MaxX, Scrollbar.Content.MaxY = Scrollbar.Content.Window.getSize();
+
+			Scrollbar.Content.Window.scroll = windowScroll(Scrollbar.Content.Window.scroll)
 			return Scrollbar.Content.Window;
 		end
 
@@ -316,8 +329,16 @@ return function(parentWindow)
 		Scrollbar.Content.PosY = 1;
 		Scrollbar.Content.PosX = 1;
 
-		-- Vertical
+		local xOffset, yOffset = 0, 0;
 		if (Scrollbar.Content.MaxY > ParentMaxY) then
+			xOffset = -1;
+		end
+		if (Scrollbar.Content.MaxX > ParentMaxX) then
+			yOffset = -1;
+		end
+
+		-- Vertical
+		if (Scrollbar.Content.MaxY > ParentMaxY+xOffset) then
 			Scrollbar.ContentContainer.Width = ParentMaxX-Scrollbar.VerticalScrollbar.Width;
 			Scrollbar.VerticalScrollbar.Visible = true;
 			Scrollbar.VerticalScrollbar.Window.setVisible(true)
@@ -333,7 +354,7 @@ return function(parentWindow)
 		end
 
 		-- Horizontal
-		if (Scrollbar.Content.MaxX > ParentMaxX) then
+		if (Scrollbar.Content.MaxX > ParentMaxX+xOffset) then
 			Scrollbar.ContentContainer.Height = ParentMaxY-Scrollbar.HorizontalScrollbar.Height;
 			Scrollbar.HorizontalScrollbar.Visible = true;
 			Scrollbar.HorizontalScrollbar.Window.setVisible(true)
@@ -350,6 +371,7 @@ return function(parentWindow)
 		end
 
 		Scrollbar.Content.Window = windowObject;
+		Scrollbar.Content.Window.scroll = windowScroll(Scrollbar.Content.Window.scroll)
 		Scrollbar.ContentContainer.Window = window.create(Scrollbar.ParentWindow, Scrollbar.ContentContainer.PosX, Scrollbar.ContentContainer.PosY, Scrollbar.ContentContainer.Width, Scrollbar.ContentContainer.Height, true);
 
 		Scrollbar.Content.Window.reposition(Scrollbar.Content.PosX, Scrollbar.Content.PosY, Scrollbar.Content.MaxX, Scrollbar.Content.MaxY, Scrollbar.ContentContainer.Window);
@@ -372,7 +394,9 @@ return function(parentWindow)
 	Scrollbar.VerticalScrollbar.RecalulateValues = function()
 		ParentMaxX, ParentMaxY = Scrollbar.ParentWindow.getSize();
 		local cMaxX, cMaxY = Scrollbar.Content.Window.getSize();
-		if (cMaxY > ParentMaxY) then
+
+		local yOffset = (Scrollbar.HorizontalScrollbar.Visible) and Scrollbar.HorizontalScrollbar.Height or 0;
+		if (cMaxY > ParentMaxY-yOffset) then
 			Scrollbar.VerticalScrollbar.Visible = true;
 			Scrollbar.VerticalScrollbar.Window.setVisible(true)
 		else
@@ -380,7 +404,7 @@ return function(parentWindow)
 			Scrollbar.VerticalScrollbar.Window.setVisible(false)
 		end
 
-		if (Scrollbar.HorizontalScrollbar.Visible == true) then
+		if (Scrollbar.HorizontalScrollbar.Visible == true) or (cMaxY>ParentMaxY+Scrollbar.VerticalScrollbar.Width-1) then
 			ParentMaxY = ParentMaxY - Scrollbar.HorizontalScrollbar.Height;
 			if (Scrollbar.HorizontalScrollbar.BottomAligned) then
 				Scrollbar.VerticalScrollbar.PosY = 1;
@@ -391,7 +415,7 @@ return function(parentWindow)
 			Scrollbar.VerticalScrollbar.PosY = 1;
 		end
 		if Scrollbar.VerticalScrollbar.RightAligned then
-			Scrollbar.VerticalScrollbar.PosX = ParentMaxX;
+			Scrollbar.VerticalScrollbar.PosX = ParentMaxX-Scrollbar.VerticalScrollbar.Width+1;
 			Scrollbar.ContentContainer.PosX = 1;
 		else
 			Scrollbar.VerticalScrollbar.PosX = 1;
@@ -403,9 +427,9 @@ return function(parentWindow)
 
 		Scrollbar.VerticalScrollbar.PercentVisible = ParentMaxY/(cMaxY);
 		Scrollbar.VerticalScrollbar.TrackSize = (Scrollbar.VerticalScrollbar.Height-2);
-		Scrollbar.VerticalScrollbar.KnobHeight = math.floor( (Scrollbar.VerticalScrollbar.TrackSize*Scrollbar.VerticalScrollbar.PercentVisible) + 0.5 );
-		if (Scrollbar.VerticalScrollbar.KnobHeight < 1) then Scrollbar.VerticalScrollbar.KnobHeight = 1; end -- At least 1px
-		Scrollbar.VerticalScrollbar.KnobNegativeSpace = (Scrollbar.VerticalScrollbar.TrackSize)-Scrollbar.VerticalScrollbar.KnobHeight;
+		Scrollbar.VerticalScrollbar.KnobSize = math.floor( (Scrollbar.VerticalScrollbar.TrackSize*Scrollbar.VerticalScrollbar.PercentVisible) + 0.5 );
+		if (Scrollbar.VerticalScrollbar.KnobSize < 1) then Scrollbar.VerticalScrollbar.KnobSize = 1; end -- At least 1px
+		Scrollbar.VerticalScrollbar.KnobNegativeSpace = (Scrollbar.VerticalScrollbar.TrackSize)-Scrollbar.VerticalScrollbar.KnobSize;
 		
 		--[[
 			get the total number of line NOT visible: (cMaxY-ParentMaxY)
@@ -422,6 +446,7 @@ return function(parentWindow)
 	-- Drawing
 	Scrollbar.VerticalScrollbar.DrawUpArrow = function()
 		-- Up arrow
+		local oX, oY = term.getCursorPos()
 		local upArrowBackground = Scrollbar.VerticalScrollbar.Design.ArrowsBackground or Scrollbar.Design.ArrowsBackground;
 		local upArrowForeground = Scrollbar.VerticalScrollbar.Design.ArrowsForeground or Scrollbar.Design.ArrowsForeground;
 		if (Scrollbar.VerticalScrollbar.UpArrowActive) then
@@ -435,9 +460,11 @@ return function(parentWindow)
 			Scrollbar.VerticalScrollbar.Window.setCursorPos(iW,1);
 			Scrollbar.VerticalScrollbar.Window.write(upArrow);
 		end
+		term.setCursorPos(oX, oY)
 	end
 	Scrollbar.VerticalScrollbar.DrawDownArrow = function()
 		-- Down Arrow
+		local oX, oY = term.getCursorPos()
 		local downArrowBackground = Scrollbar.VerticalScrollbar.Design.ArrowsBackground or Scrollbar.Design.ArrowsBackground;
 		local downArrowForeground = Scrollbar.VerticalScrollbar.Design.ArrowsForeground or Scrollbar.Design.ArrowsForeground;
 		if (Scrollbar.VerticalScrollbar.DownArrowActive) then
@@ -451,6 +478,7 @@ return function(parentWindow)
 			Scrollbar.VerticalScrollbar.Window.setCursorPos(iW, (ParentMaxY-1)+1);
 			Scrollbar.VerticalScrollbar.Window.write(downArrow);
 		end
+		term.setCursorPos(oX, oY)
 	end
 	Scrollbar.VerticalScrollbar.DrawArrows = function()
 		Scrollbar.VerticalScrollbar.DrawUpArrow();
@@ -468,14 +496,16 @@ return function(parentWindow)
 		end
 	end
 	Scrollbar.VerticalScrollbar.DrawKnob = function()
+		local oX, oY = term.getCursorPos()
 		Scrollbar.VerticalScrollbar.DrawTrack();
 		local knobText = setKnobDesign(true);
-		for iH = 0, Scrollbar.VerticalScrollbar.KnobHeight-1 do
+		for iH = 0, Scrollbar.VerticalScrollbar.KnobSize-1 do
 			for iW = 1, Scrollbar.VerticalScrollbar.Width do -- Allows the text to be printed on all sides if scrollbar width >1
 				Scrollbar.VerticalScrollbar.Window.setCursorPos(iW,Scrollbar.VerticalScrollbar.KnobY+iH);
 				Scrollbar.VerticalScrollbar.Window.write(knobText);
 			end
 		end
+		term.setCursorPos(oX, oY)
 	end
 
 
@@ -515,6 +545,7 @@ return function(parentWindow)
 
 
 	Scrollbar.VerticalScrollbar.Scroll = function(amount)
+		if amount == nil then amount = 1 end
 		amount = math.floor(amount);
 		amount = amount * -1;
 		setParentSize();
@@ -536,12 +567,12 @@ return function(parentWindow)
 		Scrollbar.VerticalScrollbar.Scroll(scrollDelta);
 	end
 	Scrollbar.VerticalScrollbar.PageUp = function()
-		setParentSize();
-		Scrollbar.VerticalScrollbar.Scroll((-ParentMaxY-1));
+		local ccMaxX, ccMaxY = Scrollbar.ContentContainer.Window.getSize();
+		Scrollbar.VerticalScrollbar.Scroll(-(ccMaxY-math.abs(Jello.Config.Mouse.ScrollAmount)));
 	end
 	Scrollbar.VerticalScrollbar.PageDown = function()
-		setParentSize();
-		Scrollbar.VerticalScrollbar.Scroll(ParentMaxY-1);
+		local ccMaxX, ccMaxY = Scrollbar.ContentContainer.Window.getSize();
+		Scrollbar.VerticalScrollbar.Scroll(ccMaxY-math.abs(Jello.Config.Mouse.ScrollAmount));
 	end
 
 
@@ -551,7 +582,8 @@ return function(parentWindow)
 		ParentMaxX, ParentMaxY = Scrollbar.ParentWindow.getSize();
 		local cMaxX, cMaxY = Scrollbar.Content.Window.getSize();
 
-		if (cMaxX > ParentMaxX) then
+		local xOffset = (Scrollbar.VerticalScrollbar.Visible) and Scrollbar.VerticalScrollbar.Width or 0;
+		if (cMaxX > ParentMaxX-xOffset) then
 			Scrollbar.HorizontalScrollbar.Visible = true;
 			Scrollbar.HorizontalScrollbar.Window.setVisible(true)
 		else
@@ -559,7 +591,7 @@ return function(parentWindow)
 			Scrollbar.HorizontalScrollbar.Window.setVisible(false)
 		end
 		
-		if (Scrollbar.VerticalScrollbar.Visible == true) then
+		if (Scrollbar.VerticalScrollbar.Visible == true) or (cMaxX>ParentMaxX+Scrollbar.HorizontalScrollbar.Height-1) then
 			ParentMaxX = ParentMaxX-Scrollbar.VerticalScrollbar.Width;
 			if (Scrollbar.VerticalScrollbar.RightAligned) then
 				Scrollbar.HorizontalScrollbar.PosX = 1;
@@ -571,7 +603,7 @@ return function(parentWindow)
 		end
 
 		if Scrollbar.HorizontalScrollbar.BottomAligned then
-			Scrollbar.HorizontalScrollbar.PosY = ParentMaxY;
+			Scrollbar.HorizontalScrollbar.PosY = ParentMaxY-Scrollbar.HorizontalScrollbar.Height+1;
 			Scrollbar.ContentContainer.PosY = 1;
 		else
 			Scrollbar.HorizontalScrollbar.PosY = 1;
@@ -586,9 +618,9 @@ return function(parentWindow)
 		-- HorizontalScrollbar
 		Scrollbar.HorizontalScrollbar.PercentVisible = (ParentMaxX/cMaxX);
 		Scrollbar.HorizontalScrollbar.TrackSize = (Scrollbar.HorizontalScrollbar.Width-2);
-		Scrollbar.HorizontalScrollbar.KnobWidth = math.floor( (Scrollbar.HorizontalScrollbar.TrackSize*Scrollbar.HorizontalScrollbar.PercentVisible) + 0.5 );
-		if (Scrollbar.HorizontalScrollbar.KnobWidth < 1) then Scrollbar.HorizontalScrollbar.KnobWidth = 1; end -- At least 1px
-		Scrollbar.HorizontalScrollbar.KnobNegativeSpace = (Scrollbar.HorizontalScrollbar.TrackSize)-Scrollbar.HorizontalScrollbar.KnobWidth;
+		Scrollbar.HorizontalScrollbar.KnobSize = math.floor( (Scrollbar.HorizontalScrollbar.TrackSize*Scrollbar.HorizontalScrollbar.PercentVisible) + 0.5 );
+		if (Scrollbar.HorizontalScrollbar.KnobSize < 1) then Scrollbar.HorizontalScrollbar.KnobSize = 1; end -- At least 1px
+		Scrollbar.HorizontalScrollbar.KnobNegativeSpace = (Scrollbar.HorizontalScrollbar.TrackSize)-Scrollbar.HorizontalScrollbar.KnobSize;
 		
 		--[[
 			get the total number of line NOT visible: (cMaxY-ParentMaxY)
@@ -605,6 +637,7 @@ return function(parentWindow)
 
 	Scrollbar.HorizontalScrollbar.DrawLeftArrow = function()
 		-- Left arrow
+		local oX, oY = term.getCursorPos()
 		local leftArrowBackground = Scrollbar.HorizontalScrollbar.Design.ArrowsBackground or Scrollbar.Design.ArrowsBackground;
 		local leftArrowForeground = Scrollbar.HorizontalScrollbar.Design.ArrowsForeground or Scrollbar.Design.ArrowsForeground;
 		if (Scrollbar.HorizontalScrollbar.LeftArrowActive) then
@@ -618,9 +651,11 @@ return function(parentWindow)
 			Scrollbar.HorizontalScrollbar.Window.setCursorPos(1,iH);
 			Scrollbar.HorizontalScrollbar.Window.write(leftArrowText);
 		end
+		term.setCursorPos(oX, oY)
 	end
 	Scrollbar.HorizontalScrollbar.DrawRightArrow = function()
 		-- Right arrow
+		local oX, oY = term.getCursorPos()
 		local rightArrowBackground = Scrollbar.HorizontalScrollbar.Design.ArrowsBackground or Scrollbar.Design.ArrowsBackground;
 		local rightArrowForeground = Scrollbar.HorizontalScrollbar.Design.ArrowsForeground or Scrollbar.Design.ArrowsForeground;
 		if (Scrollbar.HorizontalScrollbar.RightArrowActive) then
@@ -634,6 +669,7 @@ return function(parentWindow)
 			Scrollbar.HorizontalScrollbar.Window.setCursorPos((ParentMaxX-1)+1,iH);
 			Scrollbar.HorizontalScrollbar.Window.write(rightArrowText);
 		end
+		term.setCursorPos(oX, oY)
 	end
 	Scrollbar.HorizontalScrollbar.DrawArrows = function()
 		Scrollbar.HorizontalScrollbar.DrawLeftArrow()
@@ -649,14 +685,16 @@ return function(parentWindow)
 		end
 	end
 	Scrollbar.HorizontalScrollbar.DrawKnob = function()
+		local oX, oY = term.getCursorPos()
 		Scrollbar.HorizontalScrollbar.DrawTrack();
 		local knobText = setKnobDesign(false);
-		for i = 0, Scrollbar.HorizontalScrollbar.KnobWidth-1 do
+		for i = 0, Scrollbar.HorizontalScrollbar.KnobSize-1 do
 			for iH = 1, Scrollbar.HorizontalScrollbar.Height do -- Allows the text to be printed on all sides if scrollbar height >1
 				Scrollbar.HorizontalScrollbar.Window.setCursorPos(Scrollbar.HorizontalScrollbar.KnobX+i,iH);
 				Scrollbar.HorizontalScrollbar.Window.write(knobText);
 			end
 		end
+		term.setCursorPos(oX, oY)
 	end
 
 	Scrollbar.HorizontalScrollbar.Draw = function()
@@ -694,6 +732,7 @@ return function(parentWindow)
 
 
 	Scrollbar.HorizontalScrollbar.Scroll = function(amount)
+		if amount == nil then amount = 1 end
 		amount = math.floor(amount);
 		amount = amount * -1;
 		setParentSize();
@@ -718,19 +757,22 @@ return function(parentWindow)
 	end
 
 	Scrollbar.HorizontalScrollbar.PageLeft = function()
-		setParentSize();
-		Scrollbar.HorizontalScrollbar.Scroll((-ParentMaxX-1));
+		local ccMaxX, ccMaxY = Scrollbar.ContentContainer.Window.getSize();
+		Scrollbar.HorizontalScrollbar.Scroll(-(ccMaxX-math.abs(Jello.Config.Mouse.ScrollAmount)));
 	end
 	Scrollbar.HorizontalScrollbar.PageRight = function()
-		setParentSize();
-		Scrollbar.HorizontalScrollbar.Scroll(ParentMaxX-1);
+		local ccMaxX, ccMaxY = Scrollbar.ContentContainer.Window.getSize();
+		Scrollbar.HorizontalScrollbar.Scroll(ccMaxX-math.abs(Jello.Config.Mouse.ScrollAmount));
 	end
 
 
+	-- Detached
 
 	Scrollbar.Draw = function()
+		local oX, oY = term.getCursorPos()
 		Scrollbar.VerticalScrollbar.Draw();
 		Scrollbar.HorizontalScrollbar.Draw();
+		term.setCursorPos(oX, oY)
 	end
 	Scrollbar.Redraw = Scrollbar.Draw;
 
@@ -770,10 +812,55 @@ return function(parentWindow)
 		Scrollbar.HorizontalScrollbar.Scroll(amount)
 	end
 
+	-- Scrolls to the top of the content
+	Scrollbar.ScrollToTop = function()
+		Scrollbar.VerticalScrollbar.Scroll(-(1-Scrollbar.VerticalScrollbar.ScrollPosition))
+	end
+	-- Scrolls to the bottom of the content
+	Scrollbar.ScrollToBottom = function()
+		setParentSize();
+		local cMaxX, cMaxY = Scrollbar.Content.Window.getSize();
+		local amount = (ParentMaxY-cMaxY+1) - Scrollbar.VerticalScrollbar.ScrollPosition
+		Scrollbar.VerticalScrollbar.Scroll(-amount)
+	end
+
+	-- Scrolls to the top of the content
+	Scrollbar.ScrollToFarLeft = function()
+		Scrollbar.HorizontalScrollbar.Scroll(-(1-Scrollbar.HorizontalScrollbar.ScrollPosition))
+	end
+	-- Scrolls to the bottom of the content
+	Scrollbar.ScrollToFarRight = function()
+		setParentSize();
+		local cMaxX, cMaxY = Scrollbar.Content.Window.getSize();
+		local amount = (ParentMaxX-cMaxX+1) - Scrollbar.HorizontalScrollbar.ScrollPosition
+		Scrollbar.HorizontalScrollbar.Scroll(-amount)
+	end
+
+
+
+	Scrollbar.IsAtTop = function()
+		return Scrollbar.VerticalScrollbar.ScrollPosition==1
+	end
+	Scrollbar.IsAtBottom = function()
+		setParentSize();
+		local cMaxX, cMaxY = Scrollbar.Content.Window.getSize();
+		return (Scrollbar.VerticalScrollbar.ScrollPosition == (ParentMaxY-cMaxY+1))
+	end
+	Scrollbar.IsAtFarLeft = function()
+		return Scrollbar.HorizontalScrollbar.ScrollPosition==1
+	end
+	Scrollbar.IsAtFarRight = function()
+		setParentSize();
+		local cMaxX, cMaxY = Scrollbar.Content.Window.getSize();
+		return (Scrollbar.HorizontalScrollbar.ScrollPosition == (ParentMaxX-cMaxX+1))
+	end
+
 	-- Negative for up/left
 	Scrollbar.Scroll = function(verticalAmount, horizontalAmount)
 		Scrollbar.VerticalScrollbar.Scroll(verticalAmount)
-		Scrollbar.HorizontalScrollbar.Scroll(horizontalAmount)
+		if horizontalAmount ~= nil then
+			Scrollbar.HorizontalScrollbar.Scroll(horizontalAmount)
+		end
 	end
 
 	Scrollbar.VerticalScrollbar.GetScrollAmount = function()
@@ -825,7 +912,7 @@ return function(parentWindow)
 		cords.vSbX2 = cords.vSbX1 + Scrollbar.VerticalScrollbar.Width-1; -- far right
 		cords.vSbY2 = cords.vSbY1 + Scrollbar.VerticalScrollbar.Height-1; -- bottom
 		cords.vSbK1 = Scrollbar.VerticalScrollbar.KnobY + vK1Offset;
-		cords.vSbK2 = cords.vSbK1+Scrollbar.VerticalScrollbar.KnobHeight-1;
+		cords.vSbK2 = cords.vSbK1+Scrollbar.VerticalScrollbar.KnobSize-1;
 
 		-- Horizontal scrollbar
 		cords.hSbX1 = Scrollbar.HorizontalScrollbar.PosX; -- far left
@@ -833,7 +920,7 @@ return function(parentWindow)
 		cords.hSbX2 = cords.hSbX1 + Scrollbar.HorizontalScrollbar.Width-1; -- far right
 		cords.hSbY2 = cords.hSbY1 + Scrollbar.HorizontalScrollbar.Height-1; -- bottom
 		cords.hSbK1 = Scrollbar.HorizontalScrollbar.KnobX + hK1Offset;
-		cords.hSbK2 = cords.hSbK1+Scrollbar.HorizontalScrollbar.KnobWidth-1;
+		cords.hSbK2 = cords.hSbK1+Scrollbar.HorizontalScrollbar.KnobSize-1;
 
 		return cords;
 	end
@@ -855,134 +942,195 @@ return function(parentWindow)
 		return (cords.mX >= cords.hSbX1 and cords.mX <= cords.hSbX2) and (cords.mY >= cords.hSbY1 and cords.mY <= cords.hSbY2);
 	end
 
+	local function deactivateAll()
+		Scrollbar.VerticalScrollbar.KnobActive = false;
+		Scrollbar.VerticalScrollbar.TrackActive = false;
+		Scrollbar.VerticalScrollbar.UpArrowActive = false;
+		Scrollbar.VerticalScrollbar.DownArrowActive = false;
+		Scrollbar.VerticalScrollbar.Draw();
+		Scrollbar.HorizontalScrollbar.KnobActive = false;
+		Scrollbar.HorizontalScrollbar.TrackActive = false;
+		Scrollbar.HorizontalScrollbar.LeftArrowActive = false;
+		Scrollbar.HorizontalScrollbar.RightArrowActive = false;
+		Scrollbar.HorizontalScrollbar.Draw();
+	end
 	--[[
 
 		Handle event is similar to queueEvent, you pass events, such as term_resize or mouse_click, to the scrollbar to handle
 
 		@tparam table The event inside a table (with additional arguments) that you wish the scrollbar to handle
 	]]
-	Scrollbar.HandleEvent = function(event)
-		term.setBackgroundColor(colors.black);
-				term.setTextColor(colors.yellow);
-		if (type(event) ~= "table") then
-			error("Parameter #1, event, expected type table got type " .. type(event));
+	Scrollbar.HandleEvent = function(...)
+		event = {...}
+		if (#event <= 0) then
+			return;
+		end
+		if (type(event[1]) == "table") then -- ??
+			event = event[1]
 		end
 
 		setParentSize();
 
+		local function getContentRelativeEventCoordinates()
+			local cords = getCordinates(event[3], event[4]);
+			return {event[1], event[2], cords.mX-Scrollbar.HorizontalScrollbar.ScrollPosition+1, cords.mY-Scrollbar.VerticalScrollbar.ScrollPosition+1}
+			-- Don't block, but return the correct cords
+		end
+
 		local eventName = event[1];
 		if (eventName == "mouse_up") then
 			if (Scrollbar.VerticalScrollbar.KnobActive) then
-				Scrollbar.VerticalScrollbar.KnobActive = false;
 				-- Scroll the content
 				local percent = ((Scrollbar.VerticalScrollbar.KnobY-2)/Scrollbar.VerticalScrollbar.KnobNegativeSpace);
 				Scrollbar.VerticalScrollbar.ScrollToPercent(percent);
-				Scrollbar.VerticalScrollbar.Draw();
+				
+				deactivateAll()
+				return true
 			elseif (Scrollbar.HorizontalScrollbar.KnobActive) then
-				Scrollbar.HorizontalScrollbar.KnobActive = false;
-
 				-- Scroll the content
 				local percent = ((Scrollbar.HorizontalScrollbar.KnobX-2)/Scrollbar.HorizontalScrollbar.KnobNegativeSpace);
 				Scrollbar.HorizontalScrollbar.ScrollToPercent(percent);
-				Scrollbar.VerticalScrollbar.Draw();
 
-				Scrollbar.HorizontalScrollbar.Draw();
+				deactivateAll()
+				return true
 			elseif (Scrollbar.VerticalScrollbar.UpArrowActive or Scrollbar.VerticalScrollbar.DownArrowActive) then
-				Scrollbar.VerticalScrollbar.UpArrowActive = false;
-				Scrollbar.VerticalScrollbar.DownArrowActive = false;
-				Scrollbar.VerticalScrollbar.DrawArrows();
+				deactivateAll()
+				return true
 			elseif (Scrollbar.HorizontalScrollbar.LeftArrowActive or Scrollbar.HorizontalScrollbar.RightArrowActive) then
-				Scrollbar.HorizontalScrollbar.LeftArrowActive = false;
-				Scrollbar.HorizontalScrollbar.RightArrowActive = false;
-				Scrollbar.HorizontalScrollbar.DrawArrows();
+				deactivateAll()
+				return true
 			elseif (Scrollbar.VerticalScrollbar.TrackActive) then
-				Scrollbar.VerticalScrollbar.TrackActive = false;
-				Scrollbar.VerticalScrollbar.DrawKnob();
+				deactivateAll()
+				return true
 			elseif (Scrollbar.HorizontalScrollbar.TrackActive) then
-				Scrollbar.HorizontalScrollbar.TrackActive = false;
-				Scrollbar.HorizontalScrollbar.DrawKnob();
+				deactivateAll()
+				return true
 			end
 
 		elseif (eventName == "mouse_scroll") then
 			local cords = getCordinates(event[3], event[4]);
 			if (coordinatesInsideParentWindow(cords)) then -- Within the Scrollbar parent
+				-- Run it by the children first
+				for id, component in ipairs(Scrollbar.Children) do -- This way nested scrollbars have priority
+					if (Scrollbar.Children ~= nil) then
+						if Scrollbar.Children.HandleEvent(getContentRelativeEventCoordinates()) then
+							return true
+						end
+					end
+				end
 				if ((Scrollbar.HorizontalScrollbar.Visible and not Scrollbar.VerticalScrollbar.Visible) or coordinatesInsideHorizontalScrollbar(cords)) then
 					-- Scroll horizontally IF cursor over the horizontal scrollbar OR horizontal scrolling is that is available
-					Scrollbar.HorizontalScrollbar.Scroll(event[2]);
+					if (event[2]>0) then
+						-- Going right
+						if Scrollbar.IsAtFarRight() then
+							return false, getContentRelativeEventCoordinates() -- Do not capture this event
+						end
+					else
+						if Scrollbar.IsAtFarLeft() then
+							return false, getContentRelativeEventCoordinates() -- Do not capture this event
+						end
+					end
+					Scrollbar.HorizontalScrollbar.Scroll(event[2] * Jello.Config.Mouse.ScrollAmount);
+					return true
 				elseif (Scrollbar.VerticalScrollbar.Visible) then
-					Scrollbar.VerticalScrollbar.Scroll(event[2]);
+					-- Check if we're ignoring this (since we're maxed out)
+					if (event[2]>0) then
+						-- Going down
+						if Scrollbar.IsAtBottom() then
+							return false, getContentRelativeEventCoordinates() -- Do not capture this event
+						end
+					else
+						if Scrollbar.IsAtTop() then
+							return false, getContentRelativeEventCoordinates() -- Do not capture this event
+						end
+					end
+
+					Scrollbar.VerticalScrollbar.Scroll(event[2] * Jello.Config.Mouse.ScrollAmount);
+					return true
 				end
 			end
+
 
 		elseif (eventName == "mouse_click") and (event[2] == Jello.Config.Mouse.PrimaryButton) then -- Mouse 1 (primary) click
 			local cords = getCordinates(event[3], event[4]);
-			if (not coordinatesInsideParentWindow(cords)) then return end
+			if (coordinatesInsideParentWindow(cords)) then
+				-- Vertical first
+				if (Scrollbar.VerticalScrollbar.Visible) then -- Check if click within VerticalScrollbar
+					-- term.setCursorPos(1,1);
+					-- term.setBackgroundColor(colors.black);
+					-- term.setTextColor(colors.yellow);
+					-- term.clearLine();
+					-- term.write("vSbX1: " .. cords.vSbX1 .. " vSbX2: " .. cords.vSbX2 .. " vSbY1: " .. cords.vSbY1 .. " vSbY2: " .. cords.vSbY2 .. " x: " .. cords.mX .. " y: " .. cords.mY);
+					-- term.write("vSbK1: " .. cords.vSbK1 .. " vSbK2: " .. cords.vSbK2 .. " x: " .. cords.mX .. " y: " .. cords.mY);
 
-			-- Vertical first
-			if (Scrollbar.VerticalScrollbar.Visible) then -- Check if click within VerticalScrollbar
-				-- term.setCursorPos(1,1);
-				-- term.setBackgroundColor(colors.black);
-				-- term.setTextColor(colors.yellow);
-				-- term.clearLine();
-				-- term.write("vSbX1: " .. cords.vSbX1 .. " vSbX2: " .. cords.vSbX2 .. " vSbY1: " .. cords.vSbY1 .. " vSbY2: " .. cords.vSbY2 .. " x: " .. cords.mX .. " y: " .. cords.mY);
-				-- term.write("vSbK1: " .. cords.vSbK1 .. " vSbK2: " .. cords.vSbK2 .. " x: " .. cords.mX .. " y: " .. cords.mY);
+					if (coordinatesInsideVerticalScrollbar(cords)) then -- Within this scrollbar
+						if (cords.mY == cords.vSbY1) then -- Clicked the up arrow
+							Scrollbar.VerticalScrollbar.UpArrowActive = true;
+							Scrollbar.VerticalScrollbar.DrawUpArrow();
+							Scrollbar.VerticalScrollbar.Scroll(-1);
+							return true
+						elseif (cords.mY == cords.vSbY2) then -- Clicked the down arrow
+							Scrollbar.VerticalScrollbar.DownArrowActive = true;
+							Scrollbar.VerticalScrollbar.DrawDownArrow();
+							Scrollbar.VerticalScrollbar.Scroll(1);
+							return true
+						elseif (cords.mY >= cords.vSbK1 and cords.mY <= cords.vSbK2) then
+							Scrollbar.VerticalScrollbar.KnobActive = true;
+							Scrollbar.VerticalScrollbar.KnobActiveY = cords.vSbK1-cords.mY; -- Top of knob - mouse y
+							Scrollbar.VerticalScrollbar.DrawKnob();
+							return true
+						elseif (cords.mY > cords.vSbY1 and cords.mY < cords.vSbK1) then
+							-- Page up
+							Scrollbar.VerticalScrollbar.TrackActive = true;
+							Scrollbar.VerticalScrollbar.DrawKnob();
+							Scrollbar.PageUp();
+							return true
+						elseif (cords.mY > cords.vSbK2 and cords.mY < cords.vSbY2) then
+							-- Page down
+							Scrollbar.VerticalScrollbar.TrackActive = true;
+							Scrollbar.VerticalScrollbar.DrawKnob();
+							Scrollbar.PageDown();
+							return true
+						end
+					end
+				end
 
-				if (coordinatesInsideVerticalScrollbar(cords)) then -- Within this scrollbar
-					if (cords.mY == cords.vSbY1) then -- Clicked the up arrow
-						Scrollbar.VerticalScrollbar.UpArrowActive = true;
-						Scrollbar.VerticalScrollbar.DrawUpArrow();
-						Scrollbar.VerticalScrollbar.Scroll(-1);
-					elseif (cords.mY == cords.vSbY2) then -- Clicked the down arrow
-						Scrollbar.VerticalScrollbar.DownArrowActive = true;
-						Scrollbar.VerticalScrollbar.DrawDownArrow();
-						Scrollbar.VerticalScrollbar.Scroll(1);
-					elseif (cords.mY >= cords.vSbK1 and cords.mY <= cords.vSbK2) then
-						Scrollbar.VerticalScrollbar.KnobActive = true;
-						Scrollbar.VerticalScrollbar.KnobActiveY = cords.vSbK1-cords.mY; -- Top of knob - mouse y
-						Scrollbar.VerticalScrollbar.DrawKnob();
-					elseif (cords.mY > cords.vSbY1 and cords.mY < cords.vSbK1) then
-						-- Page up
-						Scrollbar.VerticalScrollbar.TrackActive = true;
-						Scrollbar.VerticalScrollbar.DrawKnob();
-						Scrollbar.VerticalScrollbar.PageUp();
-					elseif (cords.mY > cords.vSbK2 and cords.mY < cords.vSbY2) then
-						-- Page down
-						Scrollbar.VerticalScrollbar.TrackActive = true;
-						Scrollbar.VerticalScrollbar.DrawKnob();
-						Scrollbar.VerticalScrollbar.PageDown();
+
+				-- Horizontal
+				if (Scrollbar.HorizontalScrollbar.Visible) then -- Check if click within VerticalScrollbar
+					if (coordinatesInsideHorizontalScrollbar(cords)) then -- Within this scrollbar
+						if (cords.mX == cords.hSbX1) then -- Clicked the left arrow
+							Scrollbar.HorizontalScrollbar.LeftArrowActive = true;
+							Scrollbar.HorizontalScrollbar.DrawLeftArrow();
+							Scrollbar.HorizontalScrollbar.Scroll(-1);
+							return true
+						elseif (cords.mX == cords.hSbX2) then -- Clicked the right arrow
+							Scrollbar.HorizontalScrollbar.RightArrowActive = true;
+							Scrollbar.HorizontalScrollbar.DrawRightArrow();
+							Scrollbar.HorizontalScrollbar.Scroll(1);
+							return true
+						elseif (cords.mX >= cords.hSbK1 and cords.mX <= cords.hSbK2) then
+							Scrollbar.HorizontalScrollbar.KnobActive = true;
+							Scrollbar.HorizontalScrollbar.KnobActiveX = cords.hSbK1-cords.mX; -- Top of knob - mouse y
+							Scrollbar.HorizontalScrollbar.DrawKnob();
+							return true
+						elseif (cords.mX > cords.hSbX1 and cords.mX < cords.hSbK1) then
+							-- Page left
+							Scrollbar.HorizontalScrollbar.TrackActive = true;
+							Scrollbar.HorizontalScrollbar.DrawKnob();
+							Scrollbar.PageLeft();
+							return true
+						elseif (cords.mX > cords.hSbK2 and cords.mX < cords.hSbX2) then
+							-- Page right
+							Scrollbar.HorizontalScrollbar.TrackActive = true;
+							Scrollbar.HorizontalScrollbar.DrawKnob();
+							Scrollbar.PageRight();
+							return true
+						end
 					end
 				end
 			end
 
-
-			-- Horizontal
-			if (Scrollbar.HorizontalScrollbar.Visible) then -- Check if click within VerticalScrollbar
-				if (coordinatesInsideHorizontalScrollbar(cords)) then -- Within this scrollbar
-					if (cords.mX == cords.hSbX1) then -- Clicked the left arrow
-						Scrollbar.HorizontalScrollbar.LeftArrowActive = true;
-						Scrollbar.HorizontalScrollbar.DrawLeftArrow();
-						Scrollbar.HorizontalScrollbar.Scroll(-1);
-					elseif (cords.mX == cords.hSbX2) then -- Clicked the right arrow
-						Scrollbar.HorizontalScrollbar.RightArrowActive = true;
-						Scrollbar.HorizontalScrollbar.DrawRightArrow();
-						Scrollbar.HorizontalScrollbar.Scroll(1);
-					elseif (cords.mX >= cords.hSbK1 and cords.mX <= cords.hSbK2) then
-						Scrollbar.HorizontalScrollbar.KnobActive = true;
-						Scrollbar.HorizontalScrollbar.KnobActiveX = cords.hSbK1-cords.mX; -- Top of knob - mouse y
-						Scrollbar.HorizontalScrollbar.DrawKnob();
-					elseif (cords.mX > cords.hSbX1 and cords.mX < cords.hSbK1) then
-						-- Page left
-						Scrollbar.HorizontalScrollbar.TrackActive = true;
-						Scrollbar.HorizontalScrollbar.DrawKnob();
-						Scrollbar.HorizontalScrollbar.PageLeft();
-					elseif (cords.mX > cords.hSbK2 and cords.mX < cords.hSbX2) then
-						-- Page right
-						Scrollbar.HorizontalScrollbar.TrackActive = true;
-						Scrollbar.HorizontalScrollbar.DrawKnob();
-						Scrollbar.HorizontalScrollbar.PageRight();
-					end
-				end
-			end
 		elseif (eventName == "mouse_drag") then
 			local cords = getCordinates(event[3], event[4]);
 			-- if (not coordinatesInsideParentWindow(cords)) then return end
@@ -994,8 +1142,8 @@ return function(parentWindow)
 
 				if (y < cords.vSbY1+upOffet) then -- Too far up
 					y = cords.vSbY1+upOffet;
-				elseif (y > (cords.vSbY2)-Scrollbar.VerticalScrollbar.KnobHeight-downOffset) then -- Too far down
-					y = (cords.vSbY2)-Scrollbar.VerticalScrollbar.KnobHeight-downOffset;
+				elseif (y > (cords.vSbY2)-Scrollbar.VerticalScrollbar.KnobSize-downOffset) then -- Too far down
+					y = (cords.vSbY2)-Scrollbar.VerticalScrollbar.KnobSize-downOffset;
 				end
 				Scrollbar.VerticalScrollbar.KnobY = y;
 				if (Scrollbar.ScrollOnDrag) then
@@ -1003,7 +1151,7 @@ return function(parentWindow)
 					Scrollbar.VerticalScrollbar.ScrollToPercent(percent);
 				end
 				Scrollbar.VerticalScrollbar.DrawKnob();
-
+				return true
 
 			elseif (Scrollbar.HorizontalScrollbar.KnobActive and (cords.mX >= cords.cWX1 and cords.mX <= cords.cWX2)) then
 				-- Scroll left/right
@@ -1013,8 +1161,8 @@ return function(parentWindow)
 
 				if (x < cords.hSbX1+leftOffset) then -- Too far left
 					x = cords.hSbX1+leftOffset;
-				elseif (x > (cords.hSbX2)-Scrollbar.HorizontalScrollbar.KnobWidth-rightOffset) then -- Too far right
-					x = (cords.hSbX2)-Scrollbar.HorizontalScrollbar.KnobWidth-rightOffset;
+				elseif (x > (cords.hSbX2)-Scrollbar.HorizontalScrollbar.KnobSize-rightOffset) then -- Too far right
+					x = (cords.hSbX2)-Scrollbar.HorizontalScrollbar.KnobSize-rightOffset;
 				end
 				Scrollbar.HorizontalScrollbar.KnobX = x;
 				if (Scrollbar.ScrollOnDrag) then
@@ -1022,25 +1170,55 @@ return function(parentWindow)
 					Scrollbar.HorizontalScrollbar.ScrollToPercent(percent);
 				end
 				Scrollbar.HorizontalScrollbar.DrawKnob();
+				return true
 			end
 
 		elseif (eventName == "key") then
-			if (Scrollbar.ComponentInFocus == nil) then
+			if (Scrollbar.ComponentInFocus == nil) and Jello.ScrollLock then
 				if (event[2] == keys.pageUp) then
 					Scrollbar.PageUp();
+					return true
 				elseif (event[2] == keys.pageDown) then
 					Scrollbar.PageDown();
+					return true
 				elseif (event[2] == keys.left) then
 					Scrollbar.ScrollLeft();
+					return true
 				elseif (event[2] == keys.up) then
 					Scrollbar.ScrollUp();
+					return true
 				elseif (event[2] == keys.right) then
 					Scrollbar.ScrollRight();
+					return true
 				elseif (event[2] == keys.down) then
 					Scrollbar.ScrollDown();
+					return true
 				end
 			end
 		end
+
+		if (event[1] == "mouse_up" or event[1] == "mouse_click" or event[1] == "mouse_drag" or event[1] == "mouse_scroll") then
+			local cords = getCordinates(event[3], event[4]);
+			if (Scrollbar.AbsorbOutOfBoundsMouseEvents and not coordinatesInsideParentWindow(cords)) then
+				return true -- We "handled" it (don't pass these coordinates on)
+			end
+			if (coordinatesInsideParentWindow(cords)) then
+				if (Scrollbar.Children ~= nil) then
+					if Scrollbar.Children.HandleEvent(getContentRelativeEventCoordinates()) then
+						return true -- Pass the mouse events to our children
+					end
+				end
+			end
+			return false, getContentRelativeEventCoordinates()
+		end
+
+		if (Scrollbar.Children ~= nil) then
+			if Scrollbar.Children.HandleEvent(event) then
+				return true
+			end
+		end
+
+		return false, event -- We're not capturing this event
 	end
 
 
