@@ -15,7 +15,11 @@ ParentWindow.clear()
 local ParentMaxX, ParentMaxY = ParentWindow.getSize();
 
 local Jello = loadfile("Jello.lua")();
+local ogScrollbar = Scrollbar;
 local Scrollbar = Jello.Components.Scrollbar(ParentWindow);
+if ogScrollbar ~= nil then
+	ogScrollbar.Children[1] = Scrollbar
+end
 
 
 local function drawContent(drawChar, randomColors, noText)
@@ -246,7 +250,8 @@ local function handleEvents()
 	-- Scrollbar.SetContentWindow(window.create(ParentWindow, 1, 1, 35, ParentMaxY-1, true))
 
 	-- Both
-	Scrollbar.SetContentWindow(window.create(ParentWindow, 1, 1, 100, 500, true))
+	Scrollbar.SetContentWindow(window.create(ParentWindow, 1, 1, 100, 50, true))
+	-- Scrollbar.SetContentWindow(window.create(ParentWindow, 1, 1, 100, 500, true))
 	-- Scrollbar.SetContentWindow(window.create(ParentWindow, 1, 1, 1000, 1000, true))
 	
 	drawContent(true, false, false);

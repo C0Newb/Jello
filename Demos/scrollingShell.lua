@@ -31,7 +31,8 @@ local environment = {
 	["package"] = package,
 	["Scrollbar"] = Scrollbar,
 }
-local programCoroutine = coroutine.create(function() os.run(environment, "/rom/programs/lua.lua") end);
+local programCoroutine = coroutine.create(function() os.run(environment, "/scrollbarDemo.lua") end);
+-- local programCoroutine = coroutine.create(function() os.run(environment, "/rom/programs/lua.lua") end);
 -- local programCoroutine = coroutine.create(function() os.run(environment, "/rom/programs/shell.lua") end);
 
 while true do

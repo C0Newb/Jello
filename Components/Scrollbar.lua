@@ -231,11 +231,11 @@ return function(parentWindow)
 		for id, child in ipairs(Scrollbar.Children) do -- This way nested scrollbars have priority
 			if (child ~= nil) then
 				if (type(child.HandleEvent) == "function") then
-					child.HandleEvent("jello::scrolled", amount);
+					child.HandleEvent("jello::scroll", amount);
 				end
 			end
 		end
-		bar.RecalulateValues();
+		bar.RecalculateValues();
 		bar.DrawKnob();
 		-- Scrollbar.HorizontalScrollbar.Draw();
 		-- Scrollbar.VerticalScrollbar.Draw();
@@ -393,7 +393,8 @@ return function(parentWindow)
 
 	]]
 
-	Scrollbar.VerticalScrollbar.RecalulateValues = function()
+	-- Recalculates the scrollbar values, such as PosX, PosY, height, width, position, track size, knob size, and more. These are the sizes of elements of the scrollbar and where they are.
+	Scrollbar.VerticalScrollbar.RecalculateValues = function()
 		ParentMaxX, ParentMaxY = Scrollbar.ParentWindow.getSize();
 		local cMaxX, cMaxY = Scrollbar.Content.Window.getSize();
 
@@ -446,6 +447,7 @@ return function(parentWindow)
 
 
 	-- Drawing
+	-- Draws the up arrow, using the design settings at `Scrollbar.VerticalScrollbar.Design`.
 	Scrollbar.VerticalScrollbar.DrawUpArrow = function()
 		-- Up arrow
 		local oX, oY = term.getCursorPos()
@@ -464,6 +466,7 @@ return function(parentWindow)
 		end
 		term.setCursorPos(oX, oY)
 	end
+	-- Draws the down arrow, using the design settings at `Scrollbar.VerticalScrollbar.Design`.
 	Scrollbar.VerticalScrollbar.DrawDownArrow = function()
 		-- Down Arrow
 		local oX, oY = term.getCursorPos()
@@ -482,10 +485,12 @@ return function(parentWindow)
 		end
 		term.setCursorPos(oX, oY)
 	end
+	-- Draws both arrows using `Scrollbar.VerticalScrollbar.DrawUpArrow()` and `Scrollbar.VerticalScrollbar.DrawDownArrow()`.
 	Scrollbar.VerticalScrollbar.DrawArrows = function()
 		Scrollbar.VerticalScrollbar.DrawUpArrow();
-		Scrollbar.VerticalScrollbar.DrawDownArrow()
+		Scrollbar.VerticalScrollbar.DrawDownArrow();
 	end
+	-- Draws the track, which sits between the arrow buttons and behind the knob.
 	Scrollbar.VerticalScrollbar.DrawTrack = function()
 		local trackText = setTrackDesign(true);
 		for iH = 1, Scrollbar.VerticalScrollbar.TrackSize do
@@ -497,6 +502,7 @@ return function(parentWindow)
 			end
 		end
 	end
+	-- Draws the knob, which sits somewhere between the arrow buttons, is inside the track, and shows the current scroll position. This is what you drag around to scroll.
 	Scrollbar.VerticalScrollbar.DrawKnob = function()
 		local oX, oY = term.getCursorPos()
 		Scrollbar.VerticalScrollbar.DrawTrack();
@@ -512,8 +518,10 @@ return function(parentWindow)
 
 
 	-- Print
+	-- (Re)Draws all components of the scrollbar. If the scrollbar is moving positions or shrinking, we'll attempt to clean up things before doing so.
+	-- This will move the scrollbar if necessary and then call `DrawArrows()` and `DrawKnob()`.
 	Scrollbar.VerticalScrollbar.Draw = function()
-		Scrollbar.VerticalScrollbar.RecalulateValues();
+		Scrollbar.VerticalScrollbar.RecalculateValues();
 		if (Scrollbar.VerticalScrollbar.Visible == false) then
 			return;
 		end
@@ -546,6 +554,7 @@ return function(parentWindow)
 	Scrollbar.VerticalScrollbar.Redraw = Scrollbar.VerticalScrollbar.Draw;
 
 
+	-- Scrolls vertically by a given amount. If amount is negative, the contents will scroll up. If the scroll amount is outside the amount left to scroll, we'll scroll whatever we can for that direction.
 	Scrollbar.VerticalScrollbar.Scroll = function(amount)
 		if amount == nil then amount = 1 end
 		amount = math.floor(amount);
@@ -560,7 +569,7 @@ return function(parentWindow)
 		if (amount == 0) then return; end
 		scroll(Scrollbar.VerticalScrollbar, amount);
 	end
-	-- Scrolls the vertical scrollbar to a % value
+	-- Scrolls the vertical scrollbar to a % value. So, for example, if you want to scroll halfway down, provide .5 for "scroll to 50%".
 	Scrollbar.VerticalScrollbar.ScrollToPercent = function(percent)
 		setParentSize();
 		local cMaxX, cMaxY = Scrollbar.Content.Window.getSize();
@@ -568,6 +577,8 @@ return function(parentWindow)
 		local scrollDelta = Scrollbar.VerticalScrollbar.ScrollPosition-gotoScrollPosition
 		Scrollbar.VerticalScrollbar.Scroll(scrollDelta);
 	end
+	-- Scrolls the content up by the vertical size of the content (a page length) minus the number of lines scrolled by the scroll wheel.
+	-- So, if you have a content window 9 lines tall, and the `Jello.Config.Mouse.ScrollAmount` is set to 2 (default), this will scroll the content up by 7 lines (if possible).
 	Scrollbar.VerticalScrollbar.PageUp = function()
 		local ccMaxX, ccMaxY = Scrollbar.ContentContainer.Window.getSize();
 		Scrollbar.VerticalScrollbar.Scroll(-(ccMaxY-math.abs(Jello.Config.Mouse.ScrollAmount)));
@@ -580,7 +591,8 @@ return function(parentWindow)
 
 
 	-- Horizontal
-	Scrollbar.HorizontalScrollbar.RecalulateValues = function()
+	-- Recalculates the scrollbar values, such as PosX, PosY, height, width, position, track size, knob size, and more. These are the sizes of elements of the scrollbar and where they are.
+	Scrollbar.HorizontalScrollbar.RecalculateValues = function()
 		ParentMaxX, ParentMaxY = Scrollbar.ParentWindow.getSize();
 		local cMaxX, cMaxY = Scrollbar.Content.Window.getSize();
 
@@ -637,6 +649,7 @@ return function(parentWindow)
 
 
 
+	-- Draws the left arrow button, using the design settings at `Scrollbar.HorizontalScrollbar.Design`.
 	Scrollbar.HorizontalScrollbar.DrawLeftArrow = function()
 		-- Left arrow
 		local oX, oY = term.getCursorPos()
@@ -655,6 +668,7 @@ return function(parentWindow)
 		end
 		term.setCursorPos(oX, oY)
 	end
+	-- Draws the right arrow button, using the design settings at `Scrollbar.HorizontalScrollbar.Design`.
 	Scrollbar.HorizontalScrollbar.DrawRightArrow = function()
 		-- Right arrow
 		local oX, oY = term.getCursorPos()
@@ -673,10 +687,12 @@ return function(parentWindow)
 		end
 		term.setCursorPos(oX, oY)
 	end
+	-- Draws both arrow buttons using `Scrollbar.HorizontalScrollbar.DrawLeftArrow()` and `Scrollbar.HorizontalScrollbar.DrawRightArrow()`.
 	Scrollbar.HorizontalScrollbar.DrawArrows = function()
 		Scrollbar.HorizontalScrollbar.DrawLeftArrow()
 		Scrollbar.HorizontalScrollbar.DrawRightArrow();
 	end
+	-- Draws the track, which sits between the arrow buttons and behind the knob.
 	Scrollbar.HorizontalScrollbar.DrawTrack = function()
 		local trackText = setTrackDesign(false);
 		for iW = 1, Scrollbar.HorizontalScrollbar.TrackSize do
@@ -686,6 +702,8 @@ return function(parentWindow)
 			end
 		end
 	end
+	-- Draws the knob, which sits somewhere between the arrow buttons, is inside the track, and shows the current scroll position. This is what you drag around to scroll.
+	-- This will call `Scrollbar.HorizontalScrollbar.DrawTrack()` before doing anything.
 	Scrollbar.HorizontalScrollbar.DrawKnob = function()
 		local oX, oY = term.getCursorPos()
 		Scrollbar.HorizontalScrollbar.DrawTrack();
@@ -698,9 +716,10 @@ return function(parentWindow)
 		end
 		term.setCursorPos(oX, oY)
 	end
-
+	-- (Re)Draws all components of the scrollbar. If the scrollbar is moving positions or shrinking, we'll attempt to clean up things before doing so.
+	-- This will move the scrollbar if necessary and then call `DrawArrows()` and `DrawKnob()`.
 	Scrollbar.HorizontalScrollbar.Draw = function()
-		Scrollbar.HorizontalScrollbar.RecalulateValues();
+		Scrollbar.HorizontalScrollbar.RecalculateValues();
 		if (Scrollbar.HorizontalScrollbar.Visible == false) then
 			return;
 		end
@@ -732,7 +751,7 @@ return function(parentWindow)
 	Scrollbar.HorizontalScrollbar.Redraw = Scrollbar.HorizontalScrollbar.Draw;
 
 
-
+	-- Scrolls horizontally by a given amount. If amount is negative, the contents will scroll right. If the scroll amount is outside the amount left to scroll, we'll scroll whatever we can for that direction.
 	Scrollbar.HorizontalScrollbar.Scroll = function(amount)
 		if amount == nil then amount = 1 end
 		amount = math.floor(amount);
@@ -748,7 +767,7 @@ return function(parentWindow)
 
 		scroll(Scrollbar.HorizontalScrollbar, amount);
 	end
-	-- Scrolls the vertical scrollbar to a % value
+	-- Scrolls the horizontal scrollbar to a % value. So, for example, if you want to scroll halfway to the right, provide .5 for "scroll to 50%".
 	Scrollbar.HorizontalScrollbar.ScrollToPercent = function(percent)
 		setParentSize();
 		local cMaxX, cMaxY = Scrollbar.Content.Window.getSize();
@@ -757,11 +776,14 @@ return function(parentWindow)
 
 		Scrollbar.HorizontalScrollbar.Scroll(scrollDelta);
 	end
-
+	-- Scrolls the content left by the horizontal size of the content (a page width) minus the number of lines scrolled by the scroll wheel.
+	-- So, if you have a content window 9 lines wide, and the `Jello.Config.Mouse.ScrollAmount` is set to 2 (default), this will scroll the content left by 7 lines (if possible).
 	Scrollbar.HorizontalScrollbar.PageLeft = function()
 		local ccMaxX, ccMaxY = Scrollbar.ContentContainer.Window.getSize();
 		Scrollbar.HorizontalScrollbar.Scroll(-(ccMaxX-math.abs(Jello.Config.Mouse.ScrollAmount)));
 	end
+	-- Scrolls the content right by the horizontal size of the content (a page width) minus the number of lines scrolled by the scroll wheel.
+	-- So, if you have a content window 9 lines tall, and the `Jello.Config.Mouse.ScrollAmount` is set to 2 (default), this will scroll the content right by 7 lines (if possible).
 	Scrollbar.HorizontalScrollbar.PageRight = function()
 		local ccMaxX, ccMaxY = Scrollbar.ContentContainer.Window.getSize();
 		Scrollbar.HorizontalScrollbar.Scroll(ccMaxX-math.abs(Jello.Config.Mouse.ScrollAmount));
@@ -770,6 +792,7 @@ return function(parentWindow)
 
 	-- Detached
 
+	-- (Re)Draw both scrollbars
 	Scrollbar.Draw = function()
 		local oX, oY = term.getCursorPos()
 		Scrollbar.VerticalScrollbar.Draw();
@@ -793,32 +816,36 @@ return function(parentWindow)
 	end
 
 
+	-- Scroll the content to the up by a given amount.
 	Scrollbar.ScrollUp = function(amount)
 		if (type(amount) ~= "number") then amount = -1 end
 		if (amount > 0) then amount = amount*-1; end
 		Scrollbar.VerticalScrollbar.Scroll(amount)
 	end
+	-- Scroll the content to the down by a given amount.
 	Scrollbar.ScrollDown = function(amount)
 		if (type(amount) ~= "number") then amount = 1 end
 		if (amount < 0) then amount = amount*-1; end
 		Scrollbar.VerticalScrollbar.Scroll(amount)
 	end
+	-- Scroll the content to the left by a given amount.
 	Scrollbar.ScrollLeft = function(amount)
 		if (type(amount) ~= "number") then amount = -1 end
 		if (amount > 0) then amount = amount*-1; end
 		Scrollbar.HorizontalScrollbar.Scroll(amount)
 	end
+	-- Scroll the content to the right by a given amount.
 	Scrollbar.ScrollRight = function(amount)
 		if (type(amount) ~= "number") then amount = 1 end
 		if (amount < 0) then amount = amount*-1; end
 		Scrollbar.HorizontalScrollbar.Scroll(amount)
 	end
 
-	-- Scrolls to the top of the content
+	-- Scrolls to the top of the content.
 	Scrollbar.ScrollToTop = function()
 		Scrollbar.VerticalScrollbar.Scroll(-(1-Scrollbar.VerticalScrollbar.ScrollPosition))
 	end
-	-- Scrolls to the bottom of the content
+	-- Scrolls to the bottom of the content.
 	Scrollbar.ScrollToBottom = function()
 		setParentSize();
 		local cMaxX, cMaxY = Scrollbar.Content.Window.getSize();
@@ -826,11 +853,11 @@ return function(parentWindow)
 		Scrollbar.VerticalScrollbar.Scroll(-amount)
 	end
 
-	-- Scrolls to the top of the content
+	-- Scrolls all the way to the far most left position.
 	Scrollbar.ScrollToFarLeft = function()
 		Scrollbar.HorizontalScrollbar.Scroll(-(1-Scrollbar.HorizontalScrollbar.ScrollPosition))
 	end
-	-- Scrolls to the bottom of the content
+	-- Scrolls all the way to the far most right position.
 	Scrollbar.ScrollToFarRight = function()
 		setParentSize();
 		local cMaxX, cMaxY = Scrollbar.Content.Window.getSize();
@@ -839,18 +866,21 @@ return function(parentWindow)
 	end
 
 
-
+	-- Whether the content is scroll all the way to the top.
 	Scrollbar.IsAtTop = function()
 		return Scrollbar.VerticalScrollbar.ScrollPosition==1
 	end
+	-- Whether the content is scroll all the way to the bottom.
 	Scrollbar.IsAtBottom = function()
 		setParentSize();
 		local cMaxX, cMaxY = Scrollbar.Content.Window.getSize();
 		return (Scrollbar.VerticalScrollbar.ScrollPosition == (ParentMaxY-cMaxY+1))
 	end
+	-- Whether the content is scroll all the way to the far left.
 	Scrollbar.IsAtFarLeft = function()
 		return Scrollbar.HorizontalScrollbar.ScrollPosition==1
 	end
+	-- Whether the content is scroll all the way to the far right.
 	Scrollbar.IsAtFarRight = function()
 		setParentSize();
 		local cMaxX, cMaxY = Scrollbar.Content.Window.getSize();
@@ -858,6 +888,7 @@ return function(parentWindow)
 	end
 
 	-- Negative for up/left
+	-- Scroll the content vertically and horizontally via one function call. A number less than 0 means either up (verticalAmount) or to the left (horizontalAmount).
 	Scrollbar.Scroll = function(verticalAmount, horizontalAmount)
 		Scrollbar.VerticalScrollbar.Scroll(verticalAmount)
 		if horizontalAmount ~= nil then
@@ -880,8 +911,8 @@ return function(parentWindow)
 
 	-- Handler
 
-
-	local function getCordinates(x, y)
+	-- Calculates the coordinates of various items given the mouse_click x and y value. This is to correct the mouse position in relation to the content window's position and size.
+	local function getCoordinates(x, y)
 		local xParentOffset, yParentOffset = Scrollbar.ParentWindow.getPosition();
 		local pMaxX, pMaxY = Scrollbar.ParentWindow.getSize();
 
@@ -927,23 +958,28 @@ return function(parentWindow)
 		return cords;
 	end
 
+	-- A simple helper function to check if the mouse_click was inside the parent window bounds.
 	local function coordinatesInsideParentWindow(cords)
 		if (type(cords) ~= "table") then return false end
 		return (cords.mX >= cords.pWX1 and cords.mX <= cords.pWX2) and (cords.mY >= cords.pWY1 and cords.mY <= cords.pWY2);
 	end
+	-- A simple helper function to check if the mouse_click was inside the content container bounds.
 	local function coordinatesInsideContentContainer(cords)
 		if (type(cords) ~= "table") then return false end
 		return (cords.mX >= cords.cWX1 and cords.mX <= cords.cWX2) and (cords.mY >= cords.cWY1 and cords.mY <= cords.cWY2);
 	end
+	-- A simple helper function to check if the mouse_click was inside the vertical scrollbar bounds.
 	local function coordinatesInsideVerticalScrollbar(cords)
 		if (type(cords) ~= "table") then return false end
 		return (cords.mX >= cords.vSbX1 and cords.mX <= cords.vSbX2) and (cords.mY >= cords.vSbY1 and cords.mY <= cords.vSbY2);
 	end
+	-- A simple helper function to check if the mouse_click was inside the horizontal scrollbar bounds.
 	local function coordinatesInsideHorizontalScrollbar(cords)
 		if (type(cords) ~= "table") then return false end
 		return (cords.mX >= cords.hSbX1 and cords.mX <= cords.hSbX2) and (cords.mY >= cords.hSbY1 and cords.mY <= cords.hSbY2);
 	end
 
+	-- Marks both scrollbar and their components as not activate (not being interacted with).
 	local function deactivateAll()
 		Scrollbar.VerticalScrollbar.KnobActive = false;
 		Scrollbar.VerticalScrollbar.TrackActive = false;
@@ -974,7 +1010,7 @@ return function(parentWindow)
 		setParentSize();
 
 		local function getContentRelativeEventCoordinates()
-			local cords = getCordinates(event[3], event[4]);
+			local cords = getCoordinates(event[3], event[4]);
 			return {event[1], event[2], cords.mX-Scrollbar.HorizontalScrollbar.ScrollPosition+1, cords.mY-Scrollbar.VerticalScrollbar.ScrollPosition+1}
 			-- Don't block, but return the correct cords
 		end
@@ -1010,7 +1046,7 @@ return function(parentWindow)
 			end
 
 		elseif (eventName == "mouse_scroll") then
-			local cords = getCordinates(event[3], event[4]);
+			local cords = getCoordinates(event[3], event[4]);
 			if (coordinatesInsideParentWindow(cords)) then -- Within the Scrollbar parent
 				-- Run it by the children first
 				for id, child in ipairs(Scrollbar.Children) do -- This way nested scrollbars have priority
@@ -1056,7 +1092,7 @@ return function(parentWindow)
 
 
 		elseif (eventName == "mouse_click") and (event[2] == Jello.Config.Mouse.PrimaryButton) then -- Mouse 1 (primary) click
-			local cords = getCordinates(event[3], event[4]);
+			local cords = getCoordinates(event[3], event[4]);
 			if (coordinatesInsideParentWindow(cords)) then
 				-- Vertical first
 				if (Scrollbar.VerticalScrollbar.Visible) then -- Check if click within VerticalScrollbar
@@ -1136,7 +1172,7 @@ return function(parentWindow)
 			end
 
 		elseif (eventName == "mouse_drag") then
-			local cords = getCordinates(event[3], event[4]);
+			local cords = getCoordinates(event[3], event[4]);
 			-- if (not coordinatesInsideParentWindow(cords)) then return end
 
 			if (Scrollbar.VerticalScrollbar.KnobActive and (cords.mY >= cords.cWY1 and cords.mY <= cords.cWY2)) then
@@ -1201,10 +1237,12 @@ return function(parentWindow)
 					end
 				end
 			end
+		elseif (eventName == "term_resize") then
+			Scrollbar.redraw();
 		end
 
 		if (event[1] == "mouse_up" or event[1] == "mouse_click" or event[1] == "mouse_drag" or event[1] == "mouse_scroll") then
-			local cords = getCordinates(event[3], event[4]);
+			local cords = getCoordinates(event[3], event[4]);
 			if (Scrollbar.AbsorbOutOfBoundsMouseEvents and not coordinatesInsideParentWindow(cords)) then
 				return true -- We "handled" it (don't pass these coordinates on)
 			end
