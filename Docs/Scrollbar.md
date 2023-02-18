@@ -20,7 +20,6 @@ Then throw your content into `.Content.Window`, or use `.SetContentWindow(window
 If one of the scrollbars are not needed, it is not drawn.
 
 
-
 Tested for a terminal object of size 1000x1000. _Larger sizes are possible, however, you will run into issues drawing to such a massive terminal object. Performance is not hindered by the scrollbar component._
 
 
@@ -28,6 +27,19 @@ Scroll does not use the native `.scroll()` function provided by terminal objects
 Instead, what happens is the scrollbar creates 3 windows: one for the vertical scrollbar, one for the horizontal scrollbar, and one to "contain" the content (named the ContentContainer). The `ContentContainer` window is set to the remainder of the parent window after the scrollbars are drawn (that is, width: `ParentMaxX-VerticalScrollbar.Width` and height: `ParentMaxY-HorizontalScrollbar.Height`).\
 This container acts as a mask, as everything outside the width/height of the window is chopped off and now drawn. This prevents the content drawing over the scrollbars. Doing this greatly reduces the number of terminal function calls, and thus reducing jittering and screen flashes all while retaining all the content without needing to redraw.
 
+
+
+
+## Anatomy 
+### Layout
+![Layout](https://user-images.githubusercontent.com/55852895/219829187-ad250dc5-bbff-49ac-b5ac-cdba74f8a172.png)
+
+
+### Scrollbar layout
+![Scrollbar layout](https://user-images.githubusercontent.com/55852895/219829502-1501e046-ef17-4e28-917c-b4bc7f1a6702.png)
+
+
+---
 
 
 ## Events
@@ -99,7 +111,7 @@ _All public names are in PascalCase._
 	`KnobNegativeSpace`: Number, read-only, track space minus the knob width. How much of the track the knob does not cover.\
 	`PercentVisible`: Number, read-only, parent width (accounting for the horizontal scrollbar) divided by the content width. That is, the percentage of content that can be displayed on screen at any given time.\
 	`PercentScrolled = 0`: Number, read-only, a percentage representing the amount we've scroll down. 0% means we have not scrolled, 50% means we're halfway to the bottom, and 100% means we've scrolled all the way down and cannot scroll anymore. DO not set this value, to scroll to a percentage use `.HorizontalScrollbar.ScrollToPercentage(percent)`, ensuring percent is a percent (.05 = 5%). The formula used to calculate this number is -(number of lines on top)/(number of lines not visible) or -(ScrollPosition-1)/(content window width - parent window width)\
-	`KnobX`: Number, read-only, the X coordinate of the top of the knob relative to the scrollbar's window. Calculated via: (`2 + round( KnobNegativeSpace * PercentScrolled )`) (the two represents the width of the scroll up/down buttons (1 each)).\
+	`KnobX`: Number, read-only, the X coordinate of the top of the knob relative to the scrollbar's window. Calculated via: (`2 + round( KnobNegativeSpace * PercentScrolled )`) (the two represents the width of the scroll up/down buttons (1 each)).
 
 
 
