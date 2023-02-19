@@ -102,10 +102,12 @@ local function VerticalTest()
 
 	sleep(.25)
 	for i = 1, 25 do
+		Scrollbar.HandleEvent("mouse_scroll", 1, x+1, y+1)
 		Scrollbar.VerticalScrollbar.Scroll(1);
 		sleep(.05)
 	end
 	for i = 1, 25 do
+		Scrollbar.HandleEvent("mouse_scroll", -1, x+1, y+1)
 		Scrollbar.VerticalScrollbar.Scroll(-1);
 		sleep(.05)
 	end
@@ -140,29 +142,29 @@ local function ComboTest()
 	for i = 1, 25 do
 		Scrollbar.VerticalScrollbar.Scroll(1);
 		Scrollbar.HorizontalScrollbar.Scroll(1);
-		sleep(.01)
+		-- sleep(.01)
 	end
 	for i = 1, 25 do
 		Scrollbar.VerticalScrollbar.Scroll(-1);
 		Scrollbar.HorizontalScrollbar.Scroll(-1);
-		sleep(.01)
+		-- sleep(.01)
 	end
 
 	for i = 1, 25 do
 		Scrollbar.VerticalScrollbar.Scroll(1);
-		sleep(.025)
+		-- sleep(.025)
 	end
 	for i = 1, 25 do
 		Scrollbar.HorizontalScrollbar.Scroll(1);
-		sleep(.025)
+		-- sleep(.025)
 	end
 	for i = 1, 25 do
 		Scrollbar.VerticalScrollbar.Scroll(-1);
-		sleep(.025)
+		-- sleep(.025)
 	end
 	for i = 1, 25 do
 		Scrollbar.HorizontalScrollbar.Scroll(-1);
-		sleep(.025)
+		-- sleep(.025)
 	end
 
 	sleep(1)
@@ -199,8 +201,8 @@ local function customize()
 
 	Scrollbar.HorizontalScrollbar.Design.ArrowsBackground = colors.green;
 	Scrollbar.HorizontalScrollbar.Design.TrackForeground = colors.red;
-	Scrollbar.HorizontalScrollbar.Design.LeftArrow = "<";
-	Scrollbar.HorizontalScrollbar.Design.RightArrow = ">";
+	Scrollbar.HorizontalScrollbar.Design.LeftArrow = "{";
+	Scrollbar.HorizontalScrollbar.Design.RightArrow = "}";
 
 
 	-- Below is a horrible design!
@@ -224,33 +226,18 @@ local function customize()
 	Scrollbar.VerticalScrollbar.Width = 2;
 
 	Scrollbar.Redraw();
-	for i = 1, 25 do
-		Scrollbar.VerticalScrollbar.Scroll(1);
-		sleep(.05)
-	end
-	for i = 1, 25 do
-		Scrollbar.HorizontalScrollbar.Scroll(1);
-		sleep(.05)
-	end
-	for i = 1, 25 do
-		Scrollbar.VerticalScrollbar.Scroll(-1);
-		sleep(.05)
-	end
-	for i = 1, 25 do
-		Scrollbar.HorizontalScrollbar.Scroll(-1);
-		sleep(.05)
-	end
+
 end
 
 local function handleEvents()
 	-- Vertical only
-	-- Scrollbar.SetContentWindow(window.create(ParentWindow, 1, 1, ParentMaxX-1, 25, true))
+	Scrollbar.SetContentWindow(window.create(ParentWindow, 1, 1, ParentMaxX-1, 25, true))
 
 	-- Horizontal only
 	-- Scrollbar.SetContentWindow(window.create(ParentWindow, 1, 1, 35, ParentMaxY-1, true))
 
 	-- Both
-	Scrollbar.SetContentWindow(window.create(ParentWindow, 1, 1, 100, 50, true))
+	-- Scrollbar.SetContentWindow(window.create(ParentWindow, 1, 1, 100, 50, true))
 	-- Scrollbar.SetContentWindow(window.create(ParentWindow, 1, 1, 100, 500, true))
 	-- Scrollbar.SetContentWindow(window.create(ParentWindow, 1, 1, 1000, 1000, true))
 	
@@ -279,19 +266,19 @@ local function checkAll()
 	ComboTest();
 end
 
-noScrollTest();
-VerticalTest();
-HorizontalTest();
-ComboTest();
-handleEvents();
-
--- customize();
 -- noScrollTest();
 -- VerticalTest();
 -- HorizontalTest();
--- ComboTest();
+ComboTest();
 -- handleEvents();
 
--- checkAll();
+customize();
+-- noScrollTest();
+VerticalTest();
+-- HorizontalTest();
+-- ComboTest();
+handleEvents();
+
+checkAll();
 
 term.setCursorPos(1,19)

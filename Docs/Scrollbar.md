@@ -58,8 +58,8 @@ _All public names are in PascalCase._
 
 
 ### Public
-`ComponentInFocus`: Reserved, not used
-`Children`: Reserved, not used
+`ComponentInFocus`: Reserved, not used\
+`Children`: Reserved, not used\
 `AbsorbOutOfBoundsMouseEvents = False`: Boolean, whether mouse events that occur outside of the bounds of the scrollbar parent are discarded by the event handler. This would prevent click events being provided even if they're outside the parent (for example, x=-1 and y=-4). This should be enabled if you're using the `HandleEvent()` results to dictate sending events to programs running inside the scrollbar. If this scrollbar is a child component to another component, **DO NOT SET THIS TRUE** (that would lock all mouse events to this scrollbar)\
 
 `Design`: Parent design (each scrollbar inherits their deign from here, but are free to override values). See Design.

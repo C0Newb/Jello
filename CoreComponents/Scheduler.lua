@@ -29,7 +29,7 @@ return function(...)
 	Scheduler.ExitOnNoThreads = true; -- Exits the main loop when all threads have stopped.
 	Scheduler.NoThreadsHandler = nil; -- Function that is called when all threads close. This Scheduler object is passed as the first (and only) parameter. If you return true, the scheduler exits
 	Scheduler.ExitOnEvent = false; -- Allows the scheduler to stop upon receiving a special event (Scheduler.ExitEvent)
-	Scheduler.ExitEvent = "terminate"; -- If Scheduler.AllowExit is true, this is the event that needs to be queued for the Scheduler to exit. When captured, scheduler returns "JelloScheduler::ExitEvent",Scheduler.ExitEvent
+	Scheduler.ExitEvent = "terminate"; -- If Scheduler.ExitOnEvent is true, this is the event that needs to be queued for the Scheduler to exit. When captured, scheduler returns "jello::scheduler::exitevent",Scheduler.ExitEvent
 
 
 
@@ -81,7 +81,7 @@ return function(...)
 			if not okay then
 				thread.status = "dead";
 				if (type(thread.EventHandler) == "function") then
-					thread.EventHandler("Thread::Error", thread, table.unpack(coroutineYieldedData));
+					thread.EventHandler("jello::thread::error", thread, table.unpack(coroutineYieldedData));
 				end
 			else
 				thread.Filter = coroutineYieldedData;
@@ -116,7 +116,7 @@ return function(...)
 				end
 			else
 				if (type(thread.EventHandler) == "function") then
-					thread.ErrorHandler("Thread::Dead", thread, table.unpack(coroutineYieldedData));
+					thread.ErrorHandler("jello::thread::dead", thread, table.unpack(coroutineYieldedData));
 				end
 				Scheduler.Threads[tId] = nil;
 			end
@@ -133,7 +133,7 @@ return function(...)
 
 	--[[
 
-		Adds an event to the queue to be pushed to threads later by the scheduler
+		Adds an event to the queue to be pushed to threads later by the scheduler.
 
 		@tparam string|number Event, similar to what you would pass in os.queueEvent()
 
@@ -159,7 +159,7 @@ return function(...)
 	--[[
 		Runs the event handler, captures coroutine.yield() and pushes those events to all threads in this.Threads
 
-		To kick things off, we queue "JelloScheduler::Run". This allows the coroutine.yield() to grab something and start each thread already added.
+		To kick things off, we queue "jello::scheduler::run". This allows the coroutine.yield() to grab something and start each thread already added.
 		This does not return, unless Scheduler.ExitOnEvent is true and Scheduler.ExitEvent and captured OR Scheduler.ExitOnNoThreads is true and all threads die
 
 		@treturn string Exit reason
@@ -167,11 +167,11 @@ return function(...)
 	Scheduler.Run = function()
 		Scheduler.CurrentQueueSize=Scheduler.QueueSizeLimit;
 		local event;
-		os.queueEvent("JelloScheduler::Run");
+		os.queueEvent("jello::scheduler::run");
 		while true do
 			event = {coroutine.yield()};
 			if (event[1] == Scheduler.ExitEvent and Scheduler.ExitOnEvent == true) then
-				return "JelloScheduler::ExitEvent", event[1];
+				return "jello::scheduler::exitevent", event[1];
 			else
 				Scheduler.QueueEvent(table.unpack(event));
 				if Scheduler.QueueEvents and Scheduler.CurrentQueueSize >= Scheduler.QueueSizeLimit then
@@ -182,10 +182,10 @@ return function(...)
 				if #Scheduler.Threads <= 0 then
 					if type(Scheduler.NoThreadsHandler) == "function" then
 						if Scheduler.NoThreadsHandler(Scheduler) == true then
-							return "JelloScheduler::NoThreads";
+							return "jello::scheduler::nothreads";
 						end
 					elseif Scheduler.ExitOnNoThreads then
-						return "JelloScheduler::NoThreads";
+						return "jello::scheduler::nothreads";
 					end
 				end
 			end
@@ -196,11 +196,11 @@ return function(...)
 
 	--[[
 
-		Creates a new JelloScheduler::Thread object
+		Creates a new jello::scheduler::thread object
 
 		@tparam thread Coroutine to run in this thread
-		@tparam[opt=nil] Event handler function that receives error codes or other thread related events (Thread::Dead, Thread::Killed, Thread::Error)
-		@treturn JelloScheduler::Thread Thread that can then be added via RunThread()
+		@tparam[opt=nil] function Event handler function that receives error codes or other thread related events (jello::thread::dead, jello::thread::killed, jello::thread::error).
+		@treturn jello::scheduler::thread Thread that can then be added via RunThread()
 	]]
 	Scheduler.NewThread = function(coroutineObj, eventHandler)
 		if type(coroutineObj) ~= "thread" then
@@ -221,9 +221,9 @@ return function(...)
 
 	--[[
 
-		Adds a JelloScheduler::Thread to the this.Threads table, it'll be picked up in the next cycle.
+		Adds a jello::scheduler::thread to the this.Threads table, it'll be picked up in the next cycle.
 
-		@tparam JellScheduler::Thread Thread to add to the list of Thread running
+		@tparam jello::scheduler::thread Thread to add to the list of Thread running
 		@treturn number Thread id
 	]]
 	Scheduler.RunThread = function(thread)
@@ -254,12 +254,12 @@ return function(...)
 
 	--[[
 
-		Creates a new coroutine, new JelloScheduler::Thread, and calls Scheduler.RunThread() to run said new thread.
+		Creates a new coroutine, new jello::scheduler::thread, and calls Scheduler.RunThread() to run said new thread.
 		You pass the function you wish to run in this thread as the first parameter, any additional parameters are passed to the function you passed in.
 
 		@tparam function Function that will run in the thread
 		@tparam any Arguments to pass to your function
-		@treturn[1] JelloScheduler::Thread
+		@treturn[1] jello::scheduler::thread
 
 	]]
 	Scheduler.RunFunction = function(func, ...)

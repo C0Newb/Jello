@@ -356,7 +356,7 @@ return function(parentWindow)
 		end
 
 		-- Horizontal
-		if (Scrollbar.Content.MaxX > ParentMaxX+xOffset) then
+		if (Scrollbar.Content.MaxX > ParentMaxX+yOffset) then
 			Scrollbar.ContentContainer.Height = ParentMaxY-Scrollbar.HorizontalScrollbar.Height;
 			Scrollbar.HorizontalScrollbar.Visible = true;
 			Scrollbar.HorizontalScrollbar.Window.setVisible(true)
@@ -402,13 +402,14 @@ return function(parentWindow)
 		if (cMaxY > ParentMaxY-yOffset) then
 			Scrollbar.VerticalScrollbar.Visible = true;
 			Scrollbar.VerticalScrollbar.Window.setVisible(true)
+			yOffset = (cMaxX > ParentMaxX-Scrollbar.VerticalScrollbar.Width) and Scrollbar.HorizontalScrollbar.Height or 0;
 		else
 			Scrollbar.VerticalScrollbar.Visible = false;
 			Scrollbar.VerticalScrollbar.Window.setVisible(false)
 		end
 
-		if (Scrollbar.HorizontalScrollbar.Visible == true) or (cMaxY>ParentMaxY+Scrollbar.VerticalScrollbar.Width-1) then
-			ParentMaxY = ParentMaxY - Scrollbar.HorizontalScrollbar.Height;
+		if (Scrollbar.HorizontalScrollbar.Visible == true) or (cMaxY>ParentMaxY-yOffset) then
+			ParentMaxY = ParentMaxY - yOffset;
 			if (Scrollbar.HorizontalScrollbar.BottomAligned) then
 				Scrollbar.VerticalScrollbar.PosY = 1;
 			else
@@ -600,13 +601,14 @@ return function(parentWindow)
 		if (cMaxX > ParentMaxX-xOffset) then
 			Scrollbar.HorizontalScrollbar.Visible = true;
 			Scrollbar.HorizontalScrollbar.Window.setVisible(true)
+			xOffset = (cMaxY > ParentMaxY-Scrollbar.HorizontalScrollbar.Height) and Scrollbar.VerticalScrollbar.Width or 0
 		else
 			Scrollbar.HorizontalScrollbar.Visible = false;
 			Scrollbar.HorizontalScrollbar.Window.setVisible(false)
 		end
 		
-		if (Scrollbar.VerticalScrollbar.Visible == true) or (cMaxX>ParentMaxX+Scrollbar.HorizontalScrollbar.Height-1) then
-			ParentMaxX = ParentMaxX-Scrollbar.VerticalScrollbar.Width;
+		if (Scrollbar.VerticalScrollbar.Visible == true) or (cMaxX>ParentMaxX-xOffset) then
+			ParentMaxX = ParentMaxX-xOffset;
 			if (Scrollbar.VerticalScrollbar.RightAligned) then
 				Scrollbar.HorizontalScrollbar.PosX = 1;
 			else
