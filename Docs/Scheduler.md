@@ -2,7 +2,12 @@
 Scheduler allows you to run multiple functions at the same time easily. This has a few advantages to the `parallel` API and working with raw coroutines, such as being able to dynamically add and remove running threads.
 
 
-Scheduler has some drawbacks, however. One notable on is that this is not "true multitasking" or multi-threading. Normally a scheduler would only allow a thread to run for X amount of time, and then a CPU interrupt would be thrown, causing the scheduler to switch out the running thread and switch in a new thread. CC does not have interrupts, to my knowledge, but does have events. Only issue is that these events are not received until `coroutine.yield()` is called by the currently running coroutine. What this mean is that a thread can run for as long as it wants until it calls `coroutine.yield()` (typically via sleep()). No there _is_ a runtime limit built into CC itself, these are the "max time without yield" errors you'll see sometimes. With that said, that can take seconds, so thread execution times are not synchronized between threads and it is up to the individual thread to release control back to the scheduler.
+Scheduler has some drawbacks, however. One notable on is that this is not "true multitasking" or multi-threading. Normally a scheduler would only allow a thread to run for X amount of time, and then a CPU interrupt would be thrown, causing the scheduler to switch out the running thread and switch in a new thread. CC does not have interrupts, to my knowledge, but does have events. Only issue is that these events are not received until `coroutine.yield()` is called by the currently running coroutine. What this mean is that a thread can run for as long as it wants until it calls `coroutine.yield()` (typically via `sleep()`). No there _is_ a runtime limit built into CC itself, these are the "max time without yield" errors you'll see sometimes. With that said, that can take seconds, so thread execution times are not synchronized between threads and it is up to the individual thread to release control back to the scheduler.
+
+
+
+Here's the `/Demos/schedulerDemo.lua`:
+![Demo](https://user-images.githubusercontent.com/55852895/219934203-3b764357-a6e9-479e-9d4e-cc63084da076.gif)
 
 
 
@@ -96,13 +101,11 @@ _All public names are in PascalCase._
 
 ## Methods
 ### Private
-```lua
-local function functionName(myParameter)
-```
-`myParameter`: (type: `myParameterType`) - description
+_None_
 
 
 ### Public
+#### PushEventToThreadId
 ```lua
 local function PushEventToThreadId = function(threadId, event): void
 ```
@@ -115,6 +118,7 @@ Advance, do not call manually unless you're implementing your own looper.
 
 
 
+### PushQueuedEventsToThreads
 ```lua
 local function PushQueuedEventsToThreads = function(event): void
 ```
@@ -126,6 +130,7 @@ Advance, do not call manually unless you're implementing your own looper.
 
 
 
+### QueueEvent
 ```lua
 local function QueueEvent = function(...): void
 ```
@@ -136,18 +141,20 @@ Adds an event to the queue to be pushed to threads later by the scheduler.
 
 
 
+### NewThread
 ```lua
 local function NewThread = function(coroutineObj, eventHandler): void
 ```
 Creates a new `jello::scheduler::thread` object. _(See [Scheduler Thread](#Scheduler%20Thread) for more info)._
 
 `coroutineObj`: (type `thread`) - Coroutine to run in this thread.
-`eventHandler`: (type `function`, default `nil`) - Event handler function that receives error codes or other thread related events (jello::thread::dead, jello::thread::killed, jello::thread::error).
+`eventHandler`: (type `function`, default `nil`) - Event handler function that receives error codes or other thread related events (`jello::thread::dead`, `jello::thread::killed`, `jello::thread::error`).
 
 Returns a `jello::scheduler::thread` thread that can then be added via RunThread().
 
 
 
+### RunThread
 ```lua
 local function RunThread = function(thread): void
 ```
@@ -159,7 +166,7 @@ Returns a `number` representing the new thread id.
 
 
 
-
+### RunFunction
 ```lua
 local function RunFunction = function(func, ...): void
 ```
@@ -175,11 +182,11 @@ Returns a `jello::scheduler::thread` (the thread has already been added to the t
 
 
 
-
+#### Run
 ```lua
 local function Run = function(): void
 ```
-The main loop!. Runs the event handler, captures `coroutine.yield()` and pushes those events to all threads in `Scheduler.Threads`.
+The main loop! Runs the event handler, captures `coroutine.yield()` and pushes those events to all threads in `Scheduler.Threads`.
 
 You call this to run your threads!
 

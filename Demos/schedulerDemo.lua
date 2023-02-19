@@ -214,7 +214,7 @@ local function spawnThreads(runScrolldemo)
 		print("Adding C");
 		Scheduler.RunFunction(bounceBall, windowC, windowCColors, 0.3);
 	else
-		Scheduler.RunFunction(dofile, "/scrollbarDemo.lua")
+		Scheduler.RunFunction(dofile, "/demos/scrollbarDemo.lua")
 	end
 	print("Adding D");
 	Scheduler.RunFunction(bounceBall, windowD, windowDColors, 0.15);
